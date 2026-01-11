@@ -1,0 +1,28 @@
+site_name: ToolBox CLI
+site_description: A universal offline CLI utility suite for file processing.
+theme:
+  name: material
+  palette:
+    primary: deep purple
+    accent: indigo
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - content.code.copy
+
+nav:
+  - Home: index.md
+  - Getting Started: getting-started.md
+  - Plugins:
+      - Overview: plugins/overview.md
+      - Image: plugins/image.md
+      - Video: plugins/video.md
+      - Audio: plugins/audio.md
+      - PDF: plugins/pdf.md
+      - File: plugins/file.md
+  - Workflows: workflows.md
+  - Development: development.md
+  - Contributing: contributing.md
+
+repo_url: https://github.com/user/toolbox
+repo_name: user/toolbox

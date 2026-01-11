@@ -1,0 +1,17 @@
+name: Universal Processing Demo
+description: Download, resize, and secure-delete a file
+variables:
+  image_url: "https://raw.githubusercontent.com/python-pillow/Pillow/master/docs/conf.py" # Just a placeholder link
+
+steps:
+  - name: Get Image Metadata
+    command: image metadata {{image_url}}
+    
+  - name: Download and Resize
+    command: image resize {{image_url}} --width 512 -o resized.png
+    
+  - name: Calculate Hash
+    command: file hash resized.png
+    
+  - name: Secure Cleanup
+    command: file secure-delete resized.png --passes 1

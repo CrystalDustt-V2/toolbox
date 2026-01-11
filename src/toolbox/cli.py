@@ -1,4 +1,5 @@
 import click
+import difflib
 from rich.console import Console
 from rich.table import Table
 from toolbox.core.config import config_manager
@@ -8,7 +9,19 @@ from toolbox.core.workflow import WorkflowRunner
 
 console = Console()
 
-@click.group()
+class FuzzyGroup(click.Group):
+    def get_command(self, ctx, cmd_name):
+        rv = click.Group.get_command(self, ctx, cmd_name)
+        if rv is not None:
+            return rv
+        
+        # Fuzzy matching
+        matches = difflib.get_close_matches(cmd_name, self.list_commands(ctx), cutoff=0.6)
+        if matches:
+            ctx.fail(f"'{cmd_name}' is not a toolbox command. Did you mean '{matches[0]}'?")
+        return None
+
+@click.group(cls=FuzzyGroup)
 @click.version_option(version="0.1.0")
 @click.option("--verbose", is_flag=True, help="Enable verbose output for engines")
 def cli(verbose):
@@ -74,6 +87,54 @@ def config_set(key, value):
     except Exception as e:
         click.echo(f"Error setting {key}: {str(e)}")
 
+@cli.group(name="plugins")
+def plugins_group():
+    """Manage and discover plugins."""
+    pass
+
+@plugins_group.command(name="list")
+def plugins_list():
+    """List all installed plugins."""
+    table = Table(title="Installed Plugins")
+    table.add_column("Plugin", style="cyan")
+    table.add_column("Version", style="green")
+    table.add_column("Commands", style="dim")
+    
+    for name, plugin in plugin_manager.plugins.items():
+        metadata = plugin.get_metadata()
+        table.add_row(name, "0.1.0", ", ".join(metadata.commands))
+    
+    console.print(table)
+
+@plugins_group.command(name="search")
+@click.argument("query", required=False)
+def plugins_search(query):
+    """Search for community plugins (Mock)."""
+    # This is a mock implementation for the open-source release
+    community_plugins = [
+        {"name": "toolbox-pdf-extra", "desc": "Advanced PDF merging and splitting", "author": "community"},
+        {"name": "toolbox-crypto", "desc": "File encryption and decryption (AES/RSA)", "author": "community"},
+        {"name": "toolbox-web-scrapper", "desc": "Extract data from websites to JSON/CSV", "author": "community"},
+        {"name": "toolbox-image-ai", "desc": "AI-powered image upscaling and background removal", "author": "community"},
+    ]
+    
+    table = Table(title="Community Plugins")
+    table.add_column("Name", style="cyan")
+    table.add_column("Description", style="white")
+    table.add_column("Author", style="dim")
+    
+    count = 0
+    for p in community_plugins:
+        if not query or query.lower() in p["name"].lower() or query.lower() in p["desc"].lower():
+            table.add_row(p["name"], p["desc"], p["author"])
+            count += 1
+            
+    if count > 0:
+        console.print(table)
+        console.print(f"\n[dim]To install a community plugin, use: pip install <plugin-name>[/dim]")
+    else:
+        console.print(f"No community plugins found matching '{query}'.")
+
 @cli.command()
 @click.option("--show-paths", is_flag=True, help="Show absolute paths to engines")
 def status(show_paths):
@@ -125,6 +186,15 @@ def check_system():
     import platform
     console.print(f"Platform: [green]{platform.platform()}[/green]")
     
+    # Check bin directory
+    from pathlib import Path
+    bin_dir = Path("bin")
+    if bin_dir.exists():
+        bin_files = list(bin_dir.glob("*"))
+        console.print(f"Bundled Binaries (bin/): [green]{len(bin_files)} files found[/green]")
+    else:
+        console.print("Bundled Binaries (bin/): [yellow]Not present[/yellow]")
+
     # Check dependencies
     dependencies = ["PIL", "pypdf", "yaml", "click", "rich", "pytesseract", "pdf2image"]
     console.print("\n[bold]Dependency Check:[/bold]")
@@ -180,6 +250,22 @@ def run_workflow(workflow_file, var):
     except Exception as e:
         console.print(f"[bold red]Workflow failed:[/bold red] {str(e)}")
         raise click.Abort()
+
+@cli.group(name="plugin")
+def plugin_group():
+    """Manage ToolBox plugins."""
+    pass
+
+@plugin_group.command(name="create")
+@click.argument("name")
+def plugin_create(name):
+    """Create a new plugin scaffold."""
+    try:
+        path = plugin_manager.create_scaffold(name)
+        console.print(f"[green]Successfully created plugin scaffold at: {path}[/green]")
+        console.print(f"Restart ToolBox to see the new '{name}' command group.")
+    except Exception as e:
+        console.print(f"[bold red]Error:[/bold red] {str(e)}")
 
 # Initialize plugins
 plugin_manager.load_plugins()

@@ -3,7 +3,7 @@ import pytesseract
 from pathlib import Path
 from PIL import Image, ExifTags, ImageSequence, ImageOps
 from toolbox.core.plugin import BasePlugin, PluginMetadata
-from toolbox.core.engine import engine_registry
+from toolbox.core.engine import engine_registry, console
 from toolbox.core.io import get_input_path
 
 class ImagePlugin(BasePlugin):
@@ -118,21 +118,30 @@ class ImagePlugin(BasePlugin):
                 return
 
             import pytesseract
+            from rich.progress import Progress, SpinnerColumn, TextColumn
             pytesseract.pytesseract.tesseract_cmd = tesseract.path
 
             with get_input_path(input_file) as path:
-                with Image.open(path) as img:
-                    if scale != 1.0:
-                        new_size = (int(img.width * scale), int(img.height * scale))
-                        img = img.resize(new_size, Image.Resampling.LANCZOS)
+                with Progress(
+                    SpinnerColumn(),
+                    TextColumn("[progress.description]{task.description}"),
+                    console=console,
+                ) as progress:
+                    task = progress.add_task(f"Running OCR on {os.path.basename(path)}...", total=None)
+                    
+                    with Image.open(path) as img:
+                        if scale != 1.0:
+                            new_size = (int(img.width * scale), int(img.height * scale))
+                            img = img.resize(new_size, Image.Resampling.LANCZOS)
 
-                    if preprocess == 'grayscale':
-                        img = img.convert("L")
-                    elif preprocess == 'threshold':
-                        img = img.convert("L").point(lambda x: 0 if x < 128 else 255, '1')
+                        if preprocess == 'grayscale':
+                            img = img.convert("L")
+                        elif preprocess == 'threshold':
+                            img = img.convert("L").point(lambda x: 0 if x < 128 else 255, '1')
 
-                    text = pytesseract.image_to_string(img, lang=lang)
-            
+                        text = pytesseract.image_to_string(img, lang=lang)
+                        progress.update(task, completed=True)
+
             if output:
                 with open(output, "w", encoding="utf-8") as f:
                     f.write(text)

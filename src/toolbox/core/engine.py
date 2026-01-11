@@ -2,9 +2,11 @@ import shutil
 import subprocess
 import sys
 import os
+import re
 from pathlib import Path
 from typing import List, Optional, Tuple, Dict
 from rich.console import Console
+from rich.progress import Progress, TextColumn, BarColumn, TaskProgressColumn, TimeRemainingColumn
 from toolbox.core.config import config_manager
 
 console = Console()
@@ -98,6 +100,83 @@ class FFmpegEngine(BaseEngine):
 
     def get_install_hint(self) -> str:
         return "Download from ffmpeg.org and add to PATH, or place 'ffmpeg.exe' in 'bin/'."
+
+    def run_with_progress(self, args: List[str], label: str = "Processing") -> subprocess.CompletedProcess:
+        """Run FFmpeg with a progress bar."""
+        if not self.is_available:
+            hint = self.get_install_hint()
+            raise EngineError(f"Engine 'FFmpeg' not found.\nHint: {hint}")
+
+        # Add -progress - to get machine-readable output on stdout
+        # But we also need to keep the original args.
+        # It's better to parse stderr for 'time=' if we don't want to mess with stdout.
+        full_command = [self.path] + args
+        
+        if self.verbose:
+            console.print(f"[dim]Running with progress: {' '.join(full_command)}[/dim]")
+
+        duration = None
+        duration_re = re.compile(r"Duration: (\d{2}):(\d{2}):(\d{2})\.(\d{2})")
+        time_re = re.compile(r"time=(\d{2}):(\d{2}):(\d{2})\.(\d{2})")
+
+        def to_seconds(h, m, s, ms):
+            return int(h) * 3600 + int(m) * 60 + int(s) + int(ms) / 100
+
+        with Progress(
+            TextColumn("[progress.description]{task.description}"),
+            BarColumn(),
+            TaskProgressColumn(),
+            TimeRemainingColumn(),
+            console=console,
+        ) as progress:
+            task = progress.add_task(label, total=100)
+            
+            # Use Popen to read stderr line by line
+            process = subprocess.Popen(
+                full_command,
+                stderr=subprocess.PIPE,
+                stdout=subprocess.PIPE,
+                universal_newlines=True,
+                encoding='utf-8',
+                errors='replace'
+            )
+
+            stdout_content = []
+            stderr_content = []
+
+            # FFmpeg writes progress info to stderr
+            while True:
+                line = process.stderr.readline()
+                if not line and process.poll() is not None:
+                    break
+                
+                if line:
+                    stderr_content.append(line)
+                    # Parse duration
+                    if duration is None:
+                        match = duration_re.search(line)
+                        if match:
+                            duration = to_seconds(*match.groups())
+                    
+                    # Parse current time
+                    match = time_re.search(line)
+                    if match and duration:
+                        current_time = to_seconds(*match.groups())
+                        percent = min(100, (current_time / duration) * 100)
+                        progress.update(task, completed=percent)
+
+            process.wait()
+            
+            if process.returncode != 0:
+                error_msg = "".join(stderr_content[-10:]) # last 10 lines
+                raise EngineError(f"FFmpeg failed with exit code {process.returncode}\n{error_msg}")
+
+            return subprocess.CompletedProcess(
+                args=full_command,
+                returncode=process.returncode,
+                stdout="".join(stdout_content),
+                stderr="".join(stderr_content)
+            )
 
 class ImageMagickEngine(BaseEngine):
     def __init__(self):

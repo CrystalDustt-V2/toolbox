@@ -1,22 +1,54 @@
 import os
 import urllib.request
+import urllib.parse
 import tempfile
 import click
 import time
+import socket
 from pathlib import Path
 from contextlib import contextmanager
 from typing import Generator, Optional
+
+def is_safe_url(url: str) -> bool:
+    """Basic SSRF protection - prevent access to private IP ranges."""
+    try:
+        parsed = urllib.parse.urlparse(url)
+        if parsed.scheme not in ("http", "https"):
+            return False
+            
+        hostname = parsed.hostname
+        if not hostname:
+            return False
+            
+        # Resolve hostname to IP
+        ip = socket.gethostbyname(hostname)
+        
+        # Check for private/loopback IP ranges
+        parts = list(map(int, ip.split('.')))
+        if parts[0] == 127: return False # Loopback
+        if parts[0] == 10: return False  # Class A private
+        if parts[0] == 172 and 16 <= parts[1] <= 31: return False # Class B private
+        if parts[0] == 192 and parts[1] == 168: return False # Class C private
+        if parts[0] >= 224: return False # Multicast/Reserved
+        
+        return True
+    except Exception:
+        return False
 
 @contextmanager
 def get_input_path(input_source: str, show_progress: bool = True) -> Generator[str, None, None]:
     """
     A context manager that handles both local paths and web URLs.
+    Includes basic SSRF protection for URLs.
     """
     is_url = input_source.startswith(("http://", "https://"))
     temp_file = None
 
     try:
         if is_url:
+            if not is_safe_url(input_source):
+                raise click.ClickException(f"URL security check failed: {input_source}. Access to local/private network is restricted.")
+                
             suffix = Path(input_source.split("?")[0]).suffix
             fd, temp_path = tempfile.mkstemp(suffix=suffix)
             os.close(fd)

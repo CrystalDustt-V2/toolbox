@@ -58,8 +58,8 @@ ToolBox relies on several external engines for specialized tasks:
 
 1. **Clone the repository**:
    ```bash
-   git clone https://github.com/yourusername/toolbox-cli.git
-   cd toolbox-cli
+   git clone https://github.com/CrystalDustt-V2/toolbox.git
+   cd toolbox
    ```
 
 2. **Install dependencies**:
@@ -75,6 +75,13 @@ ToolBox relies on several external engines for specialized tasks:
    ```bash
    toolbox check
    ```
+
+4. **Setup Engines (Windows)**:
+   If you don't have FFmpeg or Tesseract installed, you can use the built-in helper:
+   ```bash
+   python setup_engines.py
+   ```
+   This will download portable versions into the `bin/` folder for immediate use.
 
 ## 📖 Usage Examples
 

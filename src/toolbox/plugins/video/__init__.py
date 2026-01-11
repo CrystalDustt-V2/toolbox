@@ -33,7 +33,7 @@ class VideoPlugin(BasePlugin):
                     args.extend(["-to", end])
                 args.extend(["-c", "copy", output])
                 
-                ffmpeg.run(args)
+                ffmpeg.run_with_progress(args, label=f"Trimming {os.path.basename(path)}")
             click.echo(f"Trimmed video saved to {output}")
 
         @video_group.command(name="extract-audio")
@@ -59,7 +59,7 @@ class VideoPlugin(BasePlugin):
                 # Use a high-quality GIF conversion filter palette
                 filter_complex = f"fps={fps},scale={width}:-1:flags=lanczos,split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse"
                 args = ["-i", path, "-filter_complex", filter_complex, output]
-                ffmpeg.run(args)
+                ffmpeg.run_with_progress(args, label=f"Converting {os.path.basename(path)} to GIF")
             click.echo(f"Converted to GIF: {output}")
 
         @video_group.command(name="compress")
@@ -72,7 +72,7 @@ class VideoPlugin(BasePlugin):
             with get_input_path(input_file) as path:
                 out_path = output or f"compressed_{os.path.basename(path)}"
                 args = ["-i", path, "-vcodec", "libx264", "-crf", str(crf), out_path]
-                ffmpeg.run(args)
+                ffmpeg.run_with_progress(args, label=f"Compressing {os.path.basename(path)}")
             click.echo(f"Compressed video saved to {out_path}")
 
         @video_group.command(name="to-sticker")
@@ -102,7 +102,7 @@ class VideoPlugin(BasePlugin):
                     out_path
                 ]
                 
-                ffmpeg.run(args)
+                ffmpeg.run_with_progress(args, label="Generating sticker")
             click.echo(f"Video converted to sticker: {out_path}")
             click.echo("Note: WhatsApp stickers should be < 1MB and usually < 6 seconds.")
 

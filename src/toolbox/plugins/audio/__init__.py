@@ -25,7 +25,7 @@ class AudioPlugin(BasePlugin):
             ffmpeg = engine_registry.get("ffmpeg")
             with get_input_path(input_file) as path:
                 args = ["-i", path, output_file]
-                ffmpeg.run(args)
+                ffmpeg.run_with_progress(args, label=f"Converting {os.path.basename(path)}")
             click.echo(f"Converted {input_file} to {output_file}")
 
         @audio_group.command(name="trim")
@@ -66,7 +66,7 @@ class AudioPlugin(BasePlugin):
                     args.extend(["-i", p])
                 args.extend(["-filter_complex", filter_str, "-map", "[a]", output])
                 
-                ffmpeg.run(args)
+                ffmpeg.run_with_progress(args, label=f"Merging {len(input_files)} files")
             
             click.echo(f"Merged {len(input_files)} files into {output}")
 

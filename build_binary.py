@@ -27,7 +27,9 @@ def build():
         # Hidden imports that might not be detected due to dynamic loading
         "--hidden-import=toolbox.plugins.audio",
         "--hidden-import=toolbox.plugins.archive",
+        "--hidden-import=toolbox.plugins.data",
         "--hidden-import=toolbox.plugins.doc",
+        "--hidden-import=toolbox.plugins.file",
         "--hidden-import=toolbox.plugins.image",
         "--hidden-import=toolbox.plugins.network",
         "--hidden-import=toolbox.plugins.pdf",
@@ -37,6 +39,11 @@ def build():
         "--hidden-import=pyyaml",
         "--hidden-import=rich",
         "--hidden-import=click",
+        "--hidden-import=pydantic",
+        "--hidden-import=pypdf",
+        "--hidden-import=qrcode",
+        "--hidden-import=pytesseract",
+        "--hidden-import=pdf2image",
     ]
     
     # Filter out None values
