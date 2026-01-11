@@ -1,0 +1,180 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# PyInstaller
+#  Usually these files are written by a python script, and contain the bin/path to python libs and 1.3.1
+#  pyinstaller etc.
+*.manifest
+*.spec
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.dash/
+.pytest_cache/
+.pytest_cache/v/
+.pytest_cache/.gitignore
+.pytest_cache/CACHEDIR.TAG
+
+# Translations
+*.mo
+*.pot
+
+# Django stuff:
+*.log
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+
+# Flask stuff:
+instance/
+.webassets-cache
+
+# Scrapy stuff:
+.scrapy
+
+# Sphinx documentation
+docs/_build/
+
+# PyBuilder
+.pybuilder/
+target/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# IPython
+profile_default/
+ipython_config.py
+
+# pyenv
+#   For a library or package, you might want to ignore these files since the Python version is
+#   usually managed by the user.
+# .python-version
+
+# pipenv
+#   According to pypa/pipenv#1255, pipenv should probably not be ignored in codebases.
+#   However, for a library or package, you might want to ignore these files since the
+#   dependencies are usually managed in setup.py or pyproject.toml.
+# Pipfile
+# Pipfile.lock
+
+# poetry
+#   Similar to Pipfile, but for poetry.
+# poetry.lock
+
+# pdm
+#   Similar to Pipfile, but for pdm.
+# .pdm.toml
+# .pdm-python
+# .pdm-build/
+
+# PEP 582; used by e.g. github.com/pdm-project/pdm
+__pypackages__/
+
+# Celery stuff
+celerybeat-schedule
+celerybeat.pid
+
+# SageMath parsed files
+*.sage.py
+
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Spyder project settings
+.spyderproject
+.spyproject
+
+# Rope project settings
+.ropeproject
+
+# mkdocs documentation
+/site
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Pyre type checker
+.pyre/
+
+# pytype static type analyzer
+.pytype/
+
+# Cython debug symbols
+cython_debug/
+
+# OS X
+.DS_Store
+
+# ToolBox specific
+bin/*
+!bin/.gitkeep
+config.yaml
+*.png
+*.jpg
+*.pdf
+*.mp3
+*.mp4
+*.gif
+*.webp
+frames/
+normalized_*
+stripped_*
+converted.*
+downloaded_file
+qrcode.png
+merged.pdf
+trimmed.mp4
+extracted_audio.mp3
+output.gif
+compressed.mp4
+frame_*.jpg
+frame_*.png
+*.log
+workflow_output/

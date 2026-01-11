@@ -1,0 +1,9 @@
+name: "Variable Test Workflow"
+vars:
+  msg: "Default Message"
+  len: 12
+steps:
+  - name: "Display Message"
+    command: "util url encode '${msg}'"
+  - name: "Generate Password"
+    command: "util password -l ${len}"

@@ -1,0 +1,8 @@
+name: "System Check Workflow"
+steps:
+  - name: "Check Engines"
+    command: "status"
+  - name: "Generate Password"
+    command: "util password -l 20"
+  - name: "URL Encode"
+    command: "util url encode 'Hello World ToolBox'"

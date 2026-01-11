@@ -1,0 +1,31 @@
+[project]
+name = "toolbox-cli"
+version = "0.1.0"
+description = "A universal CLI command tool for offline file processing."
+authors = [{ name = "ToolBox Architect" }]
+dependencies = [
+    "click>=8.1.7",
+    "rich>=13.7.0",
+    "pydantic>=2.5.3",
+    "pyyaml>=6.0.1",
+    "pillow>=10.1.0",
+    "pypdf>=3.17.1",
+    "qrcode>=7.4.2",
+    "pytesseract>=0.3.10",
+    "pdf2image>=1.17.0",
+]
+requires-python = ">=3.10"
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.4.3",
+    "pytest-cov>=4.1.0",
+    "pyinstaller>=6.3.0",
+]
+
+[project.scripts]
+toolbox = "toolbox.cli:main"
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
