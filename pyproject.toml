@@ -1,5 +1,5 @@
 [project]
-name = "toolbox-cli"
+name = "toolbox"
 version = "0.2.0"
 description = "A universal high-performance CLI command tool for offline file processing, AI tasks, and automation."
 authors = [{ name = "ToolBox Architect" }]
@@ -30,6 +30,12 @@ dependencies = [
 ]
 requires-python = ">=3.10"
 
+[project.urls]
+Homepage = "https://github.com/CrystalDustt-V2/toolbox"
+Repository = "https://github.com/CrystalDustt-V2/toolbox"
+Issues = "https://github.com/CrystalDustt-V2/toolbox/issues"
+Changelog = "https://github.com/CrystalDustt-V2/toolbox/blob/main/CHANGELOG.md"
+
 [project.optional-dependencies]
 dev = [
     "pytest>=7.4.3",
@@ -43,5 +49,12 @@ dev = [
 toolbox = "toolbox.cli:main"
 
 [build-system]
-requires = ["setuptools>=61.0"]
+requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["toolbox*"]

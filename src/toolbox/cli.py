@@ -15,6 +15,7 @@ from toolbox.core.plugin import plugin_manager
 from toolbox.core.engine import engine_registry
 from toolbox.core.workflow import WorkflowRunner
 from toolbox.core.logging import setup_logging, logger
+from toolbox import __version__
 
 console = Console()
 
@@ -32,7 +33,7 @@ class FuzzyGroup(click.Group):
         return None
 
 @click.group(cls=FuzzyGroup)
-@click.version_option(version="0.1.0")
+@click.version_option(version=__version__)
 @click.option("--verbose", is_flag=True, help="Enable verbose output for engines")
 @click.option("--log-file", type=click.Path(), help="Path to log file")
 def cli(verbose, log_file):
@@ -120,7 +121,7 @@ def plugin_list():
     
     for name, plugin in plugin_manager.plugins.items():
         metadata = plugin.get_metadata()
-        table.add_row(name, "0.1.0", ", ".join(metadata.commands))
+        table.add_row(name, metadata.version, ", ".join(metadata.commands))
     
     console.print(table)
 

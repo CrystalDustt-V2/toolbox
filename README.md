@@ -66,7 +66,12 @@ ToolBox relies on specialized engines:
    ```bash
    git clone https://github.com/CrystalDustt-V2/toolbox.git
    cd toolbox
-   pip install -e .
+   pip install .
+   ```
+
+   *Alternatively, once published to PyPI:*
+   ```bash
+   pip install toolbox
    ```
 
 2. **Setup Engines (Windows)**:

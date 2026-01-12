@@ -19,7 +19,7 @@ class FilePlugin(BasePlugin):
     def get_metadata(self) -> PluginMetadata:
         return PluginMetadata(
             name="file",
-            commands=["hash", "rename", "batch-rename", "info", "secure-delete", "encrypt", "decrypt", "shred"],
+            commands=["hash", "rename", "batch-rename", "info", "encrypt", "decrypt", "shred"],
             engine="python"
         )
 
@@ -46,34 +46,6 @@ class FilePlugin(BasePlugin):
                         hash_func.update(chunk)
                 
                 console.print(f"[bold cyan]{algorithm.upper()}:[/bold cyan] [green]{hash_func.hexdigest()}[/green]")
-
-        @file_group.command(name="secure-delete")
-        @click.argument("file_path", type=click.Path(exists=True))
-        @click.option("-p", "--passes", type=int, default=3, help="Number of overwrite passes")
-        @click.option("--dry-run", is_flag=True, help="Show what would happen")
-        def secure_delete(file_path: str, passes: int, dry_run: bool):
-            """Securely delete a file by overwriting it multiple times."""
-            path = Path(file_path)
-            if not path.is_file():
-                console.print(f"[bold red]Error:[/bold red] Secure delete only works on files.")
-                return
-
-            if dry_run:
-                console.print(f"[bold yellow]Would securely delete {file_path} with {passes} passes[/bold yellow]")
-                return
-
-            size = path.stat().st_size
-            console.print(f"[yellow]Securely deleting {file_path} ({passes} passes)...[/yellow]")
-            
-            with open(path, "ba+", buffering=0) as f:
-                for i in range(passes):
-                    f.seek(0)
-                    f.write(os.urandom(size))
-                    f.flush()
-                    os.fsync(f.fileno())
-            
-            os.remove(path)
-            console.print(f"[green]✓ File securely deleted.[/green]")
 
         @file_group.command(name="rename")
         @click.argument("src", type=click.Path(exists=True))

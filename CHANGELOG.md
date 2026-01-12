@@ -18,10 +18,13 @@ All notable changes to this project will be documented in this file.
 - **Data Export**: Added `toolbox data sql-export` for converting datasets to SQLite.
 
 ### Changed
+- **Version Synchronization**: Centralized versioning in `toolbox/__init__.py` and ensured all plugins report the correct version via `PluginMetadata`.
 - **Core Refactor**: Standardized all plugins to use Rich console, consistent type hints, and improved error handling.
-- **CLI Simplification**: Merged `plugin` and `plugins` command groups for a cleaner interface.
+- **CLI Simplification**: Merged `plugin` and `plugins` command groups and optimized the `status` and `check` commands.
+- **File Plugin**: Removed redundant `secure-delete` command in favor of the more robust `shred` (DoD 5220.22-M style).
 - **Engine Optimization**: Improved binary path resolution for FFmpeg, Tesseract, and LibreOffice.
 - **Input Handling**: Centralized SSRF protection and path resolution in `core/utils.py`.
+- **Documentation**: Migrated `changelogs.txt` to `CHANGELOG.md` and updated all repository URLs and PyPI metadata.
 
 ### Fixed
 - Resolved `NameError` in video/image plugins for `Optional` imports.

@@ -4,7 +4,7 @@
 
 ### From Source
 ```bash
-git clone https://github.com/user/toolbox.git
+git clone https://github.com/CrystalDustt-V2/toolbox.git
 cd toolbox
 pip install -e .
 ```

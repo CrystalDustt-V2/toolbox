@@ -14,4 +14,4 @@ steps:
     command: file hash resized.png
     
   - name: Secure Cleanup
-    command: file secure-delete resized.png --passes 1
+    command: file shred resized.png --passes 1
