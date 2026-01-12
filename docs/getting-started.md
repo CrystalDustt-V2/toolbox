@@ -2,6 +2,11 @@
 
 ## Installation
 
+### From PyPI
+```bash
+pip install toolbox-universal
+```
+
 ### From Source
 ```bash
 git clone https://github.com/CrystalDustt-V2/toolbox.git
