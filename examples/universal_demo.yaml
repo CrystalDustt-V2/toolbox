@@ -13,5 +13,5 @@ steps:
   - name: Calculate Hash
     command: file hash resized.png
     
-  - name: Secure Cleanup
-    command: file shred resized.png --passes 1
+  - name: Secure Shred
+    command: file shred resized.png --passes 7
