@@ -27,7 +27,7 @@ Thank you for your interest in contributing to ToolBox CLI! We welcome contribut
   ```
 - Commit your changes with clear and descriptive messages.
 - Push your branch to your fork: `git push origin feature/your-feature-name`.
-- Open a pull request against the `main` branch of the original repository.
+- Open a pull request against the `master` branch of the original repository.
 
 ## Plugin Development
 

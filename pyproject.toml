@@ -34,7 +34,7 @@ requires-python = ">=3.10"
 Homepage = "https://github.com/CrystalDustt-V2/toolbox"
 Repository = "https://github.com/CrystalDustt-V2/toolbox"
 Issues = "https://github.com/CrystalDustt-V2/toolbox/issues"
-Changelog = "https://github.com/CrystalDustt-V2/toolbox/blob/main/CHANGELOG.md"
+Changelog = "https://github.com/CrystalDustt-V2/toolbox/blob/master/CHANGELOG.md"
 
 [project.optional-dependencies]
 dev = [
