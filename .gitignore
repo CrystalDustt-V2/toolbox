@@ -94,10 +94,20 @@ target/
 profile_default/
 ipython_config.py
 
-# pyenv
-#   For a library or package, you might want to ignore these files since the Python version is
-#   usually managed by the user.
-# .python-version
+# ToolBox Specific
+bin/
+temp/
+output/
+logs/
+workflows/output/
+*.enc
+*.dec
+*.nobg.png
+*_sanitized.pdf
+
+# AI Models (rembg/onnx)
+.u2net/
+models/
 
 # pipenv
 #   According to pypa/pipenv#1255, pipenv should probably not be ignored in codebases.

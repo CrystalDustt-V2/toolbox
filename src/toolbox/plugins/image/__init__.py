@@ -15,7 +15,7 @@ class ImagePlugin(BasePlugin):
     def get_metadata(self) -> PluginMetadata:
         return PluginMetadata(
             name="image",
-            commands=["convert", "resize", "crop", "metadata", "ocr", "to-sticker", "exif-strip"],
+            commands=["convert", "resize", "crop", "metadata", "ocr", "to-sticker", "exif-strip", "remove-bg"],
             engine="pillow"
         )
 
@@ -242,4 +242,33 @@ class ImagePlugin(BasePlugin):
                         sticker.save(out_path, quality=80, method=6, format="WEBP")
                 
                 console.print(f"[green]✓ Sticker created: {out_path} (Pack: {pack}, Author: {author})[/green]")
+
+        @image_group.command(name="remove-bg")
+        @click.argument("input_file", required=False)
+        @click.option("-o", "--output", help="Output filename")
+        @click.option("--dry-run", is_flag=True, help="Show what would happen")
+        @batch_process
+        def remove_bg(input_file: str, output: Optional[str], dry_run: bool):
+            """Remove image background using rembg (AI-powered)."""
+            from rembg import remove
+            
+            out_path = output or f"{Path(input_file).stem}_nobg.png"
+            
+            if dry_run:
+                console.print(f"[bold yellow]Would remove background from {input_file} and save as {out_path}[/bold yellow]")
+                return
+
+            console.print(f"[cyan]Processing background removal for {input_file}...[/cyan]")
+            try:
+                with get_input_path(input_file) as path:
+                    with Image.open(path) as img:
+                        # Convert to RGBA if not already
+                        img = img.convert("RGBA")
+                        # Remove background
+                        result = remove(img)
+                        # Save result
+                        result.save(out_path)
+                console.print(f"[green]✓ Background removed: {out_path}[/green]")
+            except Exception as e:
+                console.print(f"[bold red]Error removing background:[/bold red] {str(e)}")
 

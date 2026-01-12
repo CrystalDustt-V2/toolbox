@@ -2,8 +2,12 @@ import click
 import hashlib
 import os
 import datetime
+import base64
 from pathlib import Path
 from typing import Optional
+from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
+from cryptography.hazmat.primitives import hashes
 
 from rich.table import Table
 from toolbox.core.plugin import BasePlugin, PluginMetadata
@@ -15,7 +19,7 @@ class FilePlugin(BasePlugin):
     def get_metadata(self) -> PluginMetadata:
         return PluginMetadata(
             name="file",
-            commands=["hash", "rename", "batch-rename", "info", "secure-delete"],
+            commands=["hash", "rename", "batch-rename", "info", "secure-delete", "encrypt", "decrypt", "shred"],
             engine="python"
         )
 
@@ -156,3 +160,112 @@ class FilePlugin(BasePlugin):
             table.add_row("Modified", modified)
             
             console.print(table)
+
+        @file_group.command(name="encrypt")
+        @click.argument("input_file", type=click.Path(exists=True))
+        @click.option("-o", "--output", help="Output encrypted file path")
+        @click.option("-p", "--password", prompt=True, hide_input=True, confirmation_prompt=True)
+        @click.option("--dry-run", is_flag=True, help="Show what would happen")
+        def encrypt(input_file: str, output: Optional[str], password: str, dry_run: bool):
+            """Encrypt a file using AES-256-GCM."""
+            out_path = output or f"{input_file}.enc"
+            
+            if dry_run:
+                console.print(f"[bold yellow]Would encrypt {input_file} to {out_path}[/bold yellow]")
+                return
+
+            console.print(f"[cyan]Encrypting {input_file}...[/cyan]")
+            
+            # Key derivation
+            salt = os.urandom(16)
+            kdf = PBKDF2HMAC(
+                algorithm=hashes.SHA256(),
+                length=32,
+                salt=salt,
+                iterations=100000,
+            )
+            key = kdf.derive(password.encode())
+            
+            # Encryption
+            aesgcm = AESGCM(key)
+            nonce = os.urandom(12)
+            
+            with open(input_file, "rb") as f:
+                data = f.read()
+            
+            ciphertext = aesgcm.encrypt(nonce, data, None)
+            
+            # Output format: [salt:16][nonce:12][ciphertext]
+            with open(out_path, "wb") as f:
+                f.write(salt)
+                f.write(nonce)
+                f.write(ciphertext)
+            
+            console.print(f"[green]✓ File encrypted: {out_path}[/green]")
+
+        @file_group.command(name="decrypt")
+        @click.argument("input_file", type=click.Path(exists=True))
+        @click.option("-o", "--output", help="Output decrypted file path")
+        @click.option("-p", "--password", prompt=True, hide_input=True)
+        @click.option("--dry-run", is_flag=True, help="Show what would happen")
+        def decrypt(input_file: str, output: Optional[str], password: str, dry_run: bool):
+            """Decrypt a file using AES-256-GCM."""
+            out_path = output or (input_file[:-4] if input_file.endswith(".enc") else f"{input_file}.dec")
+            
+            if dry_run:
+                console.print(f"[bold yellow]Would decrypt {input_file} to {out_path}[/bold yellow]")
+                return
+
+            console.print(f"[cyan]Decrypting {input_file}...[/cyan]")
+            
+            try:
+                with open(input_file, "rb") as f:
+                    salt = f.read(16)
+                    nonce = f.read(12)
+                    ciphertext = f.read()
+                
+                # Key derivation
+                kdf = PBKDF2HMAC(
+                    algorithm=hashes.SHA256(),
+                    length=32,
+                    salt=salt,
+                    iterations=100000,
+                )
+                key = kdf.derive(password.encode())
+                
+                # Decryption
+                aesgcm = AESGCM(key)
+                decrypted_data = aesgcm.decrypt(nonce, ciphertext, None)
+                
+                with open(out_path, "wb") as f:
+                    f.write(decrypted_data)
+                
+                console.print(f"[green]✓ File decrypted: {out_path}[/green]")
+            except Exception as e:
+                console.print(f"[bold red]Decryption failed:[/bold red] {str(e)}")
+
+        @file_group.command(name="shred")
+        @click.argument("input_file", type=click.Path(exists=True))
+        @click.option("-p", "--passes", type=int, default=3, help="Number of overwrite passes")
+        @click.option("--dry-run", is_flag=True, help="Show what would happen")
+        def shred(input_file: str, passes: int, dry_run: bool):
+            """Securely erase a file by overwriting it multiple times (DoD 5220.22-M style)."""
+            if dry_run:
+                console.print(f"[bold yellow]Would shred {input_file} with {passes} passes[/bold yellow]")
+                return
+
+            console.print(f"[cyan]Shredding {input_file} ({passes} passes)...[/cyan]")
+            try:
+                size = os.path.getsize(input_file)
+                with open(input_file, "ba+", buffering=0) as f:
+                    for i in range(passes):
+                        console.print(f"  Pass {i+1}/{passes}...")
+                        f.seek(0)
+                        f.write(os.urandom(size))
+                        f.flush()
+                        os.fsync(f.fileno())
+                
+                os.remove(input_file)
+                console.print(f"[green]✓ File securely shredded and deleted: {input_file}[/green]")
+            except Exception as e:
+                console.print(f"[bold red]Error shredding file:[/bold red] {str(e)}")

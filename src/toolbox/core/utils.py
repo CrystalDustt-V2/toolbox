@@ -3,8 +3,10 @@ import glob
 import os
 import socket
 import urllib.parse
+import functools
 from pathlib import Path
 from typing import Callable, List, Optional
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from toolbox.core.engine import console
 
 def is_safe_url(url: str) -> bool:
@@ -35,16 +37,14 @@ def is_safe_url(url: str) -> bool:
 
 def batch_process(func: Callable):
     """
-    Decorator to add --glob support to a click command.
+    Decorator to add --glob and --parallel support to a click command.
     """
-    import functools
-
     @click.option("--glob", "glob_pattern", help="Glob pattern to process multiple files (e.g. '*.jpg')")
+    @click.option("--parallel", is_flag=True, help="Enable parallel processing for batch operations")
+    @click.option("--workers", type=int, default=os.cpu_count(), help="Number of worker threads (default: CPU count)")
     @click.pass_context
     @functools.wraps(func)
-    def wrapper(ctx, glob_pattern, *args, **kwargs):
-        # The first argument is usually the input_file argument from Click
-        # If glob is provided, we ignore the input_file argument (which might be None)
+    def wrapper(ctx, glob_pattern, parallel, workers, *args, **kwargs):
         input_file = kwargs.get('input_file')
         
         if glob_pattern:
@@ -53,24 +53,37 @@ def batch_process(func: Callable):
                 console.print(f"[yellow]No files matched pattern: {glob_pattern}[/yellow]")
                 return
             
-            console.print(f"[cyan]Batch processing {len(files)} files...[/cyan]")
+            console.print(f"[cyan]Batch processing {len(files)} files (Parallel: {parallel})...[/cyan]")
             success_count = 0
-            for file_path in files:
-                try:
-                    # Create a copy of kwargs and update input_file
-                    current_kwargs = kwargs.copy()
-                    current_kwargs['input_file'] = file_path
-                    # Call the original function
-                    ctx.invoke(func, **current_kwargs)
-                    success_count += 1
-                except Exception as e:
-                    console.print(f"[red]Error processing {file_path}: {e}[/red]")
+            
+            if parallel:
+                with ThreadPoolExecutor(max_workers=workers) as executor:
+                    futures = []
+                    for file_path in files:
+                        current_kwargs = kwargs.copy()
+                        current_kwargs['input_file'] = file_path
+                        # We use ctx.invoke but in a thread-safe-ish way for basic operations
+                        futures.append(executor.submit(ctx.invoke, func, **current_kwargs))
+                    
+                    for future in as_completed(futures):
+                        try:
+                            future.result()
+                            success_count += 1
+                        except Exception as e:
+                            console.print(f"[red]Parallel error: {e}[/red]")
+            else:
+                for file_path in files:
+                    try:
+                        current_kwargs = kwargs.copy()
+                        current_kwargs['input_file'] = file_path
+                        ctx.invoke(func, **current_kwargs)
+                        success_count += 1
+                    except Exception as e:
+                        console.print(f"[red]Error processing {file_path}: {e}[/red]")
             
             console.print(f"[green]✓ Batch processing complete: {success_count}/{len(files)} successful.[/green]")
         else:
             if not input_file:
-                # If no glob and no input_file, Click would usually handle this, 
-                # but since we made input_file optional (implied by glob), we check it.
                 raise click.UsageError("Missing argument 'INPUT_FILE' or '--glob' option.")
             return ctx.invoke(func, **kwargs)
             

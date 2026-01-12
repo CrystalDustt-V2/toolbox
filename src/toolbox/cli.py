@@ -5,6 +5,7 @@ import subprocess
 import sys
 import urllib.request
 import yaml
+import logging
 from pathlib import Path
 from rich.console import Console
 from rich.table import Table
@@ -13,6 +14,7 @@ from toolbox.core.config import config_manager
 from toolbox.core.plugin import plugin_manager
 from toolbox.core.engine import engine_registry
 from toolbox.core.workflow import WorkflowRunner
+from toolbox.core.logging import setup_logging, logger
 
 console = Console()
 
@@ -32,9 +34,14 @@ class FuzzyGroup(click.Group):
 @click.group(cls=FuzzyGroup)
 @click.version_option(version="0.1.0")
 @click.option("--verbose", is_flag=True, help="Enable verbose output for engines")
-def cli(verbose):
+@click.option("--log-file", type=click.Path(), help="Path to log file")
+def cli(verbose, log_file):
     """ToolBox: A universal offline CLI utility suite."""
+    log_level = logging.DEBUG if verbose else logging.INFO
+    setup_logging(level=log_level, log_file=Path(log_file) if log_file else None)
+    
     if verbose:
+        logger.debug("Verbose mode enabled")
         for name, engine in engine_registry.engines.items():
             engine.verbose = True
 
@@ -168,6 +175,32 @@ def plugin_create(name):
         console.print(f"Restart ToolBox to see the new '{name}' command group.")
     except Exception as e:
         console.print(f"[bold red]Error:[/bold red] {str(e)}")
+
+@cli.command()
+def update():
+    """Self-update ToolBox from the official repository."""
+    console.print("[cyan]Checking for updates...[/cyan]")
+    try:
+        # Check if we are in a git repository
+        if not Path(".git").exists():
+            console.print("[yellow]Not a git repository. Please update manually using pip.[/yellow]")
+            return
+
+        # Attempt to pull
+        console.print("[yellow]Pulling latest changes from origin...[/yellow]")
+        result = subprocess.run(["git", "pull"], capture_output=True, text=True)
+        
+        if result.returncode == 0:
+            if "Already up to date" in result.stdout:
+                console.print("[green]✓ ToolBox is already up to date.[/green]")
+            else:
+                console.print("[green]✓ Successfully updated ToolBox![/green]")
+                console.print("[yellow]Reinstalling dependencies...[/yellow]")
+                subprocess.run([sys.executable, "-m", "pip", "install", "-e", "."])
+        else:
+            console.print(f"[bold red]Update failed:[/bold red] {result.stderr}")
+    except Exception as e:
+        console.print(f"[bold red]Error during update:[/bold red] {str(e)}")
 
 @cli.command()
 @click.option("--show-paths", is_flag=True, help="Show absolute paths to engines")
@@ -318,6 +351,78 @@ def init_workflow(filename):
         
     console.print(f"\n[bold green]✓ Workflow saved to {filename}[/bold green]")
     console.print(f"Run it with: [cyan]toolbox workflow run {filename}[/cyan]")
+
+@workflow_group.command(name="watch")
+@click.argument("directory", type=click.Path(exists=True))
+@click.argument("workflow_file", type=click.Path(exists=True))
+@click.option("--ext", multiple=True, help="Extensions to watch for (e.g. .jpg)")
+def watch_workflow(directory, workflow_file, ext):
+    """Watch a directory for new files and auto-trigger a workflow."""
+    from watchdog.observers import Observer
+    from watchdog.events import FileSystemEventHandler
+    import time
+
+    class WorkflowHandler(FileSystemEventHandler):
+        def on_created(self, event):
+            if event.is_directory:
+                return
+            
+            p = Path(event.src_path)
+            if ext and p.suffix.lower() not in [e.lower() if e.startswith(".") else f".{e.lower()}" for e in ext]:
+                return
+
+            logger.info(f"New file detected: {p.name}. Triggering workflow...")
+            runner = WorkflowRunner(cli)
+            try:
+                # Set the input_file variable to the new file
+                runner.run(workflow_file, overrides={"input_file": str(p)})
+            except Exception as e:
+                logger.error(f"Auto-workflow failed: {e}")
+
+    observer = Observer()
+    handler = WorkflowHandler()
+    observer.schedule(handler, directory, recursive=False)
+    observer.start()
+    
+    console.print(f"[bold green]Watching {directory} for new files...[/bold green]")
+    console.print("[dim]Press Ctrl+C to stop.[/dim]")
+    try:
+        while True:
+            time.sleep(1)
+    except KeyboardInterrupt:
+        observer.stop()
+    observer.join()
+
+@workflow_group.command(name="schedule")
+@click.argument("workflow_file", type=click.Path(exists=True))
+@click.option("--interval", type=int, default=60, help="Interval in minutes")
+@click.option("--immediate", is_flag=True, help="Run immediately before first interval")
+def schedule_workflow(workflow_file, interval, immediate):
+    """Schedule a workflow to run periodically."""
+    import schedule
+    import time
+
+    def job():
+        logger.info(f"Scheduled run for {workflow_file}...")
+        runner = WorkflowRunner(cli)
+        try:
+            runner.run(workflow_file)
+        except Exception as e:
+            logger.error(f"Scheduled workflow failed: {e}")
+
+    schedule.every(interval).minutes.do(job)
+    
+    if immediate:
+        job()
+
+    console.print(f"[bold green]Scheduled {workflow_file} every {interval} minutes.[/bold green]")
+    console.print("[dim]Press Ctrl+C to stop.[/dim]")
+    try:
+        while True:
+            schedule.run_pending()
+            time.sleep(1)
+    except KeyboardInterrupt:
+        pass
 
 # Initialize plugins
 plugin_manager.load_plugins()

@@ -50,3 +50,24 @@ def test_file_batch_rename(runner, tmp_path):
     assert (tmp_path / "pre_file2.txt").exists()
     assert (tmp_path / "image.jpg").exists()
     assert not (tmp_path / "file1.txt").exists()
+
+def test_file_encryption(runner, temp_file):
+    # Test encryption
+    password = "testpassword"
+    enc_file = f"{temp_file}.enc"
+    result = runner.invoke(cli, ["file", "encrypt", str(temp_file), "-p", password])
+    assert result.exit_code == 0
+    assert os.path.exists(enc_file)
+    
+    # Test decryption
+    dec_file = f"{temp_file}.dec"
+    result = runner.invoke(cli, ["file", "decrypt", enc_file, "-p", password, "-o", dec_file])
+    assert result.exit_code == 0
+    assert os.path.exists(dec_file)
+    with open(dec_file, "r") as f:
+        assert f.read() == "Hello World"
+
+def test_file_shred(runner, temp_file):
+    result = runner.invoke(cli, ["file", "shred", str(temp_file), "--passes", "1"])
+    assert result.exit_code == 0
+    assert not temp_file.exists()

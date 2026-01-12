@@ -16,7 +16,7 @@ class PdfPlugin(BasePlugin):
     def get_metadata(self) -> PluginMetadata:
         return PluginMetadata(
             name="pdf",
-            commands=["merge", "split", "rotate", "metadata", "extract-text", "ocr"],
+            commands=["merge", "split", "rotate", "metadata", "extract-text", "ocr", "sanitize"],
             engine="pypdf"
         )
 
@@ -227,3 +227,35 @@ class PdfPlugin(BasePlugin):
                         
                 except Exception as e:
                     raise click.ClickException(f"Error during PDF OCR: {e}")
+
+        @pdf_group.command(name="sanitize")
+        @click.argument("input_file")
+        @click.option("-o", "--output", help="Output sanitized PDF path")
+        @click.option("--dry-run", is_flag=True, help="Show what would happen")
+        def sanitize(input_file: str, output: Optional[str], dry_run: bool):
+            """Remove metadata and hidden information from a PDF."""
+            out_path = output or f"{Path(input_file).stem}_sanitized.pdf"
+            
+            if dry_run:
+                console.print(f"[bold yellow]Would sanitize {input_file} and save as {out_path}[/bold yellow]")
+                return
+
+            console.print(f"[cyan]Sanitizing PDF: {input_file}...[/cyan]")
+            try:
+                with get_input_path(input_file) as path:
+                    reader = PdfReader(path)
+                    writer = PdfWriter()
+
+                    # Copy pages only (strips metadata and other structures)
+                    for page in reader.pages:
+                        writer.add_page(page)
+
+                    # Ensure metadata is empty
+                    writer.add_metadata({})
+
+                    with open(out_path, "wb") as f:
+                        writer.write(f)
+                
+                console.print(f"[green]✓ PDF sanitized (metadata removed): {out_path}[/green]")
+            except Exception as e:
+                console.print(f"[bold red]Error sanitizing PDF:[/bold red] {str(e)}")

@@ -2,6 +2,7 @@ import click
 import json
 import csv
 import yaml
+import sqlite3
 from pathlib import Path
 from typing import Optional, List, Any, Dict
 from toolbox.core.plugin import BasePlugin, PluginMetadata
@@ -13,7 +14,7 @@ class DataPlugin(BasePlugin):
     def get_metadata(self) -> PluginMetadata:
         return PluginMetadata(
             name="data",
-            commands=["convert", "inspect"],
+            commands=["convert", "inspect", "sql-export"],
             engine="python"
         )
 
@@ -121,3 +122,64 @@ class DataPlugin(BasePlugin):
                     table.add_row("Value (Preview)", str(data)[:100])
 
                 console.print(table)
+
+        @data_group.command(name="sql-export")
+        @click.argument("input_file")
+        @click.option("-d", "--db", default="data.db", help="Target SQLite database file")
+        @click.option("-t", "--table", default="exported_data", help="Target table name")
+        @click.option("--dry-run", is_flag=True, help="Show what would happen")
+        def sql_export(input_file: str, db: str, table: str, dry_run: bool):
+            """Export JSON or CSV data to a SQLite database."""
+            with get_input_path(input_file) as path:
+                suffix = Path(input_file.split("?")[0]).suffix.lower()
+                
+                if dry_run:
+                    console.print(f"[bold yellow]Would export {input_file} to SQLite table '{table}' in {db}[/bold yellow]")
+                    return
+
+                # Load data into a list of dictionaries
+                rows = []
+                try:
+                    if suffix == ".json":
+                        with open(path, 'r', encoding='utf-8') as f:
+                            content = json.load(f)
+                            rows = content if isinstance(content, list) else [content]
+                    elif suffix == ".csv":
+                        with open(path, 'r', encoding='utf-8') as f:
+                            reader = csv.DictReader(f)
+                            rows = list(reader)
+                    else:
+                        console.print(f"[bold red]Error:[/bold red] Unsupported format '{suffix}'. Only JSON and CSV are supported for SQL export.")
+                        return
+                except Exception as e:
+                    console.print(f"[bold red]Error loading data:[/bold red] {e}")
+                    return
+
+                if not rows:
+                    console.print("[yellow]No data found to export.[/yellow]")
+                    return
+
+                # Deduce columns from the first row
+                columns = list(rows[0].keys())
+                
+                try:
+                    conn = sqlite3.connect(db)
+                    cursor = conn.cursor()
+                    
+                    # Create table
+                    col_defs = ", ".join([f'"{col}" TEXT' for col in columns])
+                    cursor.execute(f'CREATE TABLE IF NOT EXISTS "{table}" ({col_defs})')
+                    
+                    # Insert data
+                    placeholders = ", ".join(["?" for _ in columns])
+                    insert_sql = f'INSERT INTO "{table}" ({", ".join([f"\"{c}\"" for c in columns])}) VALUES ({placeholders})'
+                    
+                    data_to_insert = [tuple(str(row.get(col, "")) for col in columns) for row in rows]
+                    cursor.executemany(insert_sql, data_to_insert)
+                    
+                    conn.commit()
+                    conn.close()
+                    
+                    console.print(f"[green]✓ Successfully exported {len(rows)} rows to table '{table}' in {db}[/green]")
+                except Exception as e:
+                    console.print(f"[bold red]SQLite Error:[/bold red] {e}")

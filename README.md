@@ -8,48 +8,53 @@ A powerful, universal, and offline CLI utility suite for file processing, conver
 ## 🌟 Key Features
 
 - **Universal Input**: Every command supports both **local files** and **direct web links** (URLs).
+- **High-Performance Concurrency**: Built-in parallel processing for batch operations via `--parallel`.
+- **AI-Powered Capabilities**: Integrated AI tools for background removal and advanced OCR.
+- **Privacy & Security**: Secure file shredding, metadata sanitization, and AES-256-GCM encryption.
 - **Modular Plugin Architecture**: Easily extendable with a clean plugin system.
-- **Engine-Based Execution**: Leverages industry-standard tools like FFmpeg, Tesseract, and LibreOffice.
-- **Workflow Automation**: Run complex sequences of commands from simple YAML files with parallel execution support.
+- **Workflow Automation**: Run, watch, or schedule complex sequences of commands via YAML.
 - **Dry-Run Mode**: Every command supports `--dry-run` to validate operations without making changes.
-- **Privacy First**: Fully offline processing (except for initial URL downloads) with built-in SSRF protection.
 
 ## 🧩 Plugins & Capabilities
 
 ### 📁 File & Security
-- **`hash`**: Calculate MD5, SHA1, SHA256, or SHA512 (local or URL).
-- **`secure-delete`**: Securely overwrite files to prevent recovery.
-- **`batch-rename`**: Advanced renaming with prefixes, suffixes, and pattern replacement.
+- **`hash`**: Calculate MD5, SHA1, SHA256, or SHA512.
+- **`shred`**: Securely overwrite files (DoD 5220.22-M) to prevent recovery.
+- **`encrypt` / `decrypt`**: AES-256-GCM file protection.
+- **`batch-rename`**: Advanced renaming with parallel support.
 - **`info`**: Detailed file statistics and metadata.
 
 ### 🖼️ Image Processing
+- **`remove-bg`**: **AI-powered** background removal using `rembg`.
 - **`convert` / `resize` / `crop`**: Standard image manipulations.
-- **`ocr`**: Extract text with advanced preprocessing (thresholding, scaling).
-- **`to-sticker`**: Create WhatsApp-ready stickers from images or GIFs.
-- **`exif-strip`**: Remove privacy-sensitive metadata from images.
+- **`ocr`**: Extract text with advanced preprocessing.
+- **`to-sticker`**: Create WhatsApp-ready stickers.
+- **`exif-strip`**: Remove privacy-sensitive metadata.
 
 ### 🎥 Video & Audio
+- **`watermark` / `remove-watermark`**: Add or remove logos/text from video.
 - **`to-sticker`**: Convert videos directly to WhatsApp stickers.
-- **`extract-frames`**: Pull high-quality frames from video at specific intervals.
-- **`normalize`**: Level audio volume using the `loudnorm` filter.
+- **`extract-frames`**: Pull high-quality frames from video.
+- **`normalize`**: Level audio volume using `loudnorm`.
 - **`trim` / `merge` / `compress`**: Core media editing tools.
 
 ### 📄 Document & PDF
-- **`convert`**: Universal document conversion via LibreOffice (Docx, PDF, HTML, etc.).
+- **`sanitize`**: Remove metadata and hidden information from PDFs.
+- **`convert`**: Universal document conversion via LibreOffice.
 - **`merge` / `split` / `rotate`**: Robust PDF management.
-- **`extract-text`**: Extract text from PDFs or scanned documents via OCR.
+- **`extract-text`**: OCR-based text extraction from PDFs.
 
 ### 📊 Data & Utilities
-- **`convert`**: Seamlessly switch between **JSON, CSV, and YAML**.
+- **`sql-export`**: Export JSON/CSV/YAML datasets to SQLite.
+- **`convert`**: Seamlessly switch between JSON, CSV, and YAML.
 - **`qr`**: Generate QR codes from any text or link.
-- **`network info`**: Check local/public IP and connection details.
-- **`network scan`**: Basic port scanner for host diagnostics.
+- **`network info/scan`**: Connection diagnostics and port scanning.
 
 ## 🚀 Getting Started
 
 ### Prerequisites
 
-ToolBox relies on several external engines for specialized tasks:
+ToolBox relies on specialized engines:
 - **FFmpeg**: Video/Audio processing.
 - **Tesseract**: OCR capabilities.
 - **LibreOffice**: Document conversion.
@@ -57,47 +62,44 @@ ToolBox relies on several external engines for specialized tasks:
 
 ### Installation
 
-1. **Clone the repository**:
+1. **Clone & Install**:
    ```bash
    git clone https://github.com/CrystalDustt-V2/toolbox.git
    cd toolbox
-   ```
-
-2. **Install dependencies**:
-   ```bash
    pip install -e .
    ```
 
-3. **Verify Engines**:
+2. **Setup Engines (Windows)**:
    ```bash
-   toolbox status --show-paths
-   ```
-   Or use the intelligence check:
-   ```bash
-   toolbox check
+   toolbox check  # Check current status
+   python setup_engines.py  # Auto-download portable engines
    ```
 
-4. **Setup Engines (Windows)**:
-   If you don't have FFmpeg or Tesseract installed, you can use the built-in helper:
-   ```bash
-   python setup_engines.py
-   ```
-   This will download portable versions into the `bin/` folder for immediate use.
+## 📖 Advanced Usage
 
-## 📖 Usage Examples
-
-### Universal Input (Local or Web)
+### Parallel Batch Processing
 ```bash
-# Calculate hash from a remote file
-toolbox file hash https://example.com/file.zip
-
-# Convert a web image to a sticker
-toolbox image to-sticker https://example.com/funny.gif
+# Resize all JPEGs in a folder using 8 worker threads
+toolbox image resize --glob "*.jpg" -w 800 --parallel --workers 8
 ```
 
-### Dry-Run Verification
+### Automation (Workflows)
 ```bash
-# See what would be renamed without actually doing it
+# Run a sequence of commands
+toolbox workflow run process_images.yaml
+
+# Watch a directory for new files and auto-trigger a workflow
+toolbox workflow watch ./incoming my_workflow.yaml --ext .pdf
+
+# Schedule a workflow to run every 60 minutes
+toolbox workflow schedule maintenance.yaml --interval 60 --immediate
+```
+
+### Logging
+```bash
+# Run a command and save detailed logs to a file
+toolbox file hash large_file.iso --log-file ./logs/audit.log
+```
 toolbox file batch-rename ./docs --prefix "v1_" --dry-run
 ```
 

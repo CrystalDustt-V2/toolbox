@@ -13,7 +13,7 @@ class VideoPlugin(BasePlugin):
     def get_metadata(self) -> PluginMetadata:
         return PluginMetadata(
             name="video",
-            commands=["trim", "extract-audio", "to-gif", "compress", "to-sticker", "extract-frames"],
+            commands=["trim", "extract-audio", "to-gif", "compress", "to-sticker", "extract-frames", "watermark", "remove-watermark"],
             engine="ffmpeg"
         )
 
@@ -192,3 +192,95 @@ class VideoPlugin(BasePlugin):
                 ]
                 ffmpeg.run_with_progress(args, label=f"Extracting frames from {os.path.basename(path)}")
                 console.print(f"[green]✓ Frames extracted to {output_dir}[/green]")
+
+        @video_group.command(name="watermark")
+        @click.argument("input_file")
+        @click.option("-t", "--text", help="Text watermark to add")
+        @click.option("-i", "--image", type=click.Path(exists=True), help="Image watermark to add")
+        @click.option("-o", "--output", default="watermarked.mp4", help="Output filename")
+        @click.option("--pos", default="bottom-right", type=click.Choice(['top-left', 'top-right', 'bottom-left', 'bottom-right', 'center']), help="Watermark position")
+        @click.option("--dry-run", is_flag=True, help="Show what would happen")
+        def watermark(input_file: str, text: Optional[str], image: Optional[str], output: str, pos: str, dry_run: bool):
+            """Add text or image watermark to a video."""
+            if not text and not image:
+                console.print("[bold red]Error:[/bold red] Either --text or --image must be provided.")
+                return
+
+            ffmpeg = engine_registry.get("ffmpeg")
+            if not ffmpeg.is_available:
+                console.print("[bold red]Error:[/bold red] FFmpeg engine not found.")
+                return
+
+            with get_input_path(input_file) as path:
+                if dry_run:
+                    console.print(f"[bold yellow]Would add watermark to {input_file} at {pos} and save as {output}[/bold yellow]")
+                    return
+
+                # Map positions to FFmpeg overlay/drawtext coordinates
+                pos_map = {
+                    'top-left': "10:10",
+                    'top-right': "main_w-overlay_w-10:10",
+                    'bottom-left': "10:main_h-overlay_h-10",
+                    'bottom-right': "main_w-overlay_w-10:main_h-overlay_h-10",
+                    'center': "(main_w-overlay_w)/2:(main_h-overlay_h)/2"
+                }
+                
+                text_pos_map = {
+                    'top-left': "x=10:y=10",
+                    'top-right': "x=w-tw-10:y=10",
+                    'bottom-left': "x=10:y=h-th-10",
+                    'bottom-right': "x=w-tw-10:y=h-th-10",
+                    'center': "x=(w-tw)/2:y=(h-th)/2"
+                }
+
+                if image:
+                    args = [
+                        "-i", path,
+                        "-i", image,
+                        "-filter_complex", f"overlay={pos_map[pos]}",
+                        "-codec:a", "copy",
+                        output
+                    ]
+                else:
+                    # Basic drawtext filter
+                    args = [
+                        "-i", path,
+                        "-vf", f"drawtext=text='{text}':{text_pos_map[pos]}:fontsize=24:fontcolor=white@0.8:shadowcolor=black:shadowx=2:shadowy=2",
+                        "-codec:a", "copy",
+                        output
+                    ]
+
+                ffmpeg.run_with_progress(args, label=f"Adding watermark to {os.path.basename(path)}")
+                console.print(f"[green]✓ Watermark added: {output}[/green]")
+
+        @video_group.command(name="remove-watermark")
+        @click.argument("input_file")
+        @click.option("-x", type=int, required=True, help="X coordinate of the watermark")
+        @click.option("-y", type=int, required=True, help="Y coordinate of the watermark")
+        @click.option("-w", "--width", type=int, required=True, help="Width of the watermark")
+        @click.option("-h", "--height", type=int, required=True, help="Height of the watermark")
+        @click.option("-o", "--output", default="cleaned.mp4", help="Output filename")
+        @click.option("--dry-run", is_flag=True, help="Show what would happen")
+        def remove_watermark(input_file: str, x: int, y: int, width: int, height: int, output: str, dry_run: bool):
+            """Remove a watermark from a specific area using the delogo filter."""
+            ffmpeg = engine_registry.get("ffmpeg")
+            if not ffmpeg.is_available:
+                console.print("[bold red]Error:[/bold red] FFmpeg engine not found.")
+                return
+
+            with get_input_path(input_file) as path:
+                if dry_run:
+                    console.print(f"[bold yellow]Would remove watermark from {input_file} at ({x},{y}) size {width}x{height} and save as {output}[/bold yellow]")
+                    return
+
+                # delogo filter: x:y:w:h
+                args = [
+                    "-i", path,
+                    "-vf", f"delogo=x={x}:y={y}:w={width}:h={height}",
+                    "-codec:a", "copy",
+                    output
+                ]
+
+                ffmpeg.run_with_progress(args, label=f"Removing watermark from {os.path.basename(path)}")
+                console.print(f"[green]✓ Watermark removed (blurred): {output}[/green]")
+                console.print("[yellow]Note: Watermark removal uses a blur/interpolation effect on the specified area.[/yellow]")

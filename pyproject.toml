@@ -1,8 +1,17 @@
 [project]
 name = "toolbox-cli"
-version = "0.1.0"
-description = "A universal CLI command tool for offline file processing."
+version = "0.2.0"
+description = "A universal high-performance CLI command tool for offline file processing, AI tasks, and automation."
 authors = [{ name = "ToolBox Architect" }]
+readme = "README.md"
+license = { text = "MIT" }
+keywords = ["cli", "file-processing", "automation", "workflow", "ai", "security"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Topic :: Utilities",
+]
 dependencies = [
     "click>=8.1.7",
     "rich>=13.7.0",
@@ -13,6 +22,11 @@ dependencies = [
     "qrcode>=7.4.2",
     "pytesseract>=0.3.10",
     "pdf2image>=1.17.0",
+    "cryptography>=41.0.0",
+    "rembg>=2.0.53",
+    "onnxruntime>=1.16.0",
+    "watchdog>=3.0.0",
+    "schedule>=1.2.1",
 ]
 requires-python = ">=3.10"
 

@@ -5,8 +5,10 @@ import socketserver
 import socket
 import os
 import json
+import ssl
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Dict, Any
+from datetime import datetime
 
 from rich.table import Table
 from toolbox.core.plugin import BasePlugin, PluginMetadata
@@ -19,7 +21,7 @@ class NetworkPlugin(BasePlugin):
     def get_metadata(self) -> PluginMetadata:
         return PluginMetadata(
             name="network",
-            commands=["download", "serve", "info", "ping", "scan"],
+            commands=["download", "serve", "info", "ping", "scan", "whois", "cert-check"],
             engine="python-built-in"
         )
 
@@ -103,6 +105,96 @@ class NetworkPlugin(BasePlugin):
                 table.add_row("Public IP", "[yellow]Could not retrieve[/yellow]")
 
             console.print(table)
+
+        @network_group.command(name="whois")
+        @click.argument("domain")
+        def whois(domain: str):
+            """Get WHOIS information for a domain (via RDAP)."""
+            console.print(f"[cyan]Querying RDAP for domain: {domain}...[/cyan]")
+            
+            # Use RDAP (Registration Data Access Protocol) - modern alternative to WHOIS
+            rdap_url = f"https://rdap.org/domain/{domain}"
+            
+            try:
+                req = urllib.request.Request(rdap_url)
+                with urllib.request.urlopen(req) as response:
+                    data = json.loads(response.read().decode())
+                
+                table = Table(title=f"RDAP/WHOIS: {domain}")
+                table.add_column("Property", style="cyan")
+                table.add_column("Value", style="green")
+                
+                table.add_row("Handle", data.get("handle", "N/A"))
+                table.add_row("Status", ", ".join(data.get("status", [])))
+                
+                # Extract registration/expiry dates
+                events = data.get("events", [])
+                for event in events:
+                    action = event.get("eventAction", "Unknown")
+                    date = event.get("eventDate", "Unknown")
+                    if action in ["registration", "expiration", "last changed"]:
+                        table.add_row(action.capitalize(), date)
+                
+                # Extract nameservers
+                nameservers = [ns.get("ldhName") for ns in data.get("nameservers", [])]
+                if nameservers:
+                    table.add_row("Nameservers", ", ".join(nameservers))
+                
+                console.print(table)
+            except Exception as e:
+                console.print(f"[bold red]Error querying RDAP:[/bold red] {str(e)}")
+                console.print("[dim]Note: RDAP might not be supported by all TLDs or may require direct WHOIS protocol.[/dim]")
+
+        @network_group.command(name="cert-check")
+        @click.argument("host")
+        @click.option("-p", "--port", type=int, default=443)
+        def cert_check(host: str, port: int):
+            """Check SSL certificate information."""
+            console.print(f"[cyan]Retrieving SSL certificate for {host}:{port}...[/cyan]")
+            
+            context = ssl.create_default_context()
+            try:
+                with socket.create_connection((host, port), timeout=10) as sock:
+                    with context.wrap_socket(sock, server_hostname=host) as ssock:
+                        cert = ssock.getpeercert()
+                
+                if not cert:
+                    console.print("[bold red]Error:[/bold red] Could not retrieve peer certificate.")
+                    return
+                
+                table = Table(title=f"SSL Certificate: {host}")
+                table.add_column("Property", style="cyan")
+                table.add_column("Value", style="green")
+                
+                # Subject information
+                subject = dict(x[0] for x in cert.get('subject', []))
+                table.add_row("Common Name", subject.get('commonName', 'N/A'))
+                table.add_row("Organization", subject.get('organizationName', 'N/A'))
+                
+                # Issuer information
+                issuer = dict(x[0] for x in cert.get('issuer', []))
+                table.add_row("Issuer CN", issuer.get('commonName', 'N/A'))
+                
+                # Validity
+                not_before = datetime.strptime(cert['notBefore'], '%b %d %H:%M:%S %Y %Z')
+                not_after = datetime.strptime(cert['notAfter'], '%b %d %H:%M:%S %Y %Z')
+                days_left = (not_after - datetime.utcnow()).days
+                
+                table.add_row("Valid From", not_before.strftime('%Y-%m-%d'))
+                table.add_row("Expires On", not_after.strftime('%Y-%m-%d'))
+                
+                status_color = "green" if days_left > 30 else "yellow" if days_left > 0 else "bold red"
+                table.add_row("Days Remaining", f"[{status_color}]{days_left}[/{status_color}]")
+                
+                # SANs
+                sans = [alt[1] for alt in cert.get('subjectAltName', [])]
+                if sans:
+                    table.add_row("Alt Names", ", ".join(sans[:5]) + ("..." if len(sans) > 5 else ""))
+                
+                console.print(table)
+                
+            except Exception as e:
+                console.print(f"[bold red]Error retrieving SSL certificate:[/bold red] {str(e)}")
 
         @network_group.command(name="ping")
         @click.argument("host")
