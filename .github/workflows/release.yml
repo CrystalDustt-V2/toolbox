@@ -5,6 +5,9 @@ on:
     tags:
       - 'v*'
 
+permissions:
+  contents: write
+
 jobs:
   build:
     name: Build Binary (${{ matrix.os }})
@@ -31,14 +34,37 @@ jobs:
       run: |
         python build_binary.py
         
-    - name: Rename binary (Windows)
+    - name: Rename and Upload Artifact (Windows)
       if: matrix.os == 'windows-latest'
-      run: mv dist/toolbox.exe dist/toolbox-windows.exe
-      
-    - name: Rename binary (Linux)
+      uses: actions/upload-artifact@v4
+      with:
+        name: toolbox-windows
+        path: dist/toolbox.exe
+
+    - name: Rename and Upload Artifact (Linux)
       if: matrix.os == 'ubuntu-latest'
-      run: mv dist/toolbox dist/toolbox-linux
-      
+      uses: actions/upload-artifact@v4
+      with:
+        name: toolbox-linux
+        path: dist/toolbox
+
+  release:
+    name: Create GitHub Release
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+    - name: Download Artifacts
+      uses: actions/download-artifact@v4
+      with:
+        path: artifacts
+
+    - name: Prepare Release Files
+      run: |
+        mkdir -p dist
+        cp artifacts/toolbox-windows/toolbox.exe dist/toolbox-windows.exe
+        cp artifacts/toolbox-linux/toolbox dist/toolbox-linux
+        chmod +x dist/toolbox-linux
+
     - name: Release
       uses: softprops/action-gh-release@v2
       with:

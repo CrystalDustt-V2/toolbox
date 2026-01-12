@@ -71,7 +71,7 @@ ToolBox relies on specialized engines:
 
    *Alternatively, once published to PyPI:*
    ```bash
-   pip install toolbox
+   pip install toolbox-universal
    ```
 
 2. **Setup Engines (Windows)**:

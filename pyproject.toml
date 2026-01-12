@@ -1,5 +1,5 @@
 [project]
-name = "toolbox"
+name = "toolbox-universal"
 version = "0.2.0"
 description = "A universal high-performance CLI command tool for offline file processing, AI tasks, and automation."
 authors = [{ name = "ToolBox Architect" }]
