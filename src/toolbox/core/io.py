@@ -35,6 +35,11 @@ def is_safe_url(url: str) -> bool:
     except Exception:
         return False
 
+from rich.progress import Progress, TextColumn, BarColumn, TaskProgressColumn, DownloadColumn, TimeRemainingColumn
+from rich.console import Console
+
+console = Console()
+
 @contextmanager
 def get_input_path(input_source: str, show_progress: bool = True) -> Generator[str, None, None]:
     """
@@ -60,16 +65,24 @@ def get_input_path(input_source: str, show_progress: bool = True) -> Generator[s
             max_retries = 3
             for attempt in range(max_retries):
                 try:
-                    def progress_hook(count, block_size, total_size):
-                        if show_progress and total_size > 0:
-                            percent = min(100, int(count * block_size * 100 / total_size))
-                            # Using click.echo with \r for simple progress
-                            # In a more complex app we'd use click.progressbar but this is cleaner for a utility
-                            print(f"\rProgress: {percent}%", end="", flush=True)
-
-                    urllib.request.urlretrieve(input_source, temp_path, reporthook=progress_hook if show_progress else None)
                     if show_progress:
-                        print() # Newline after progress
+                        with Progress(
+                            TextColumn("[progress.description]{task.description}"),
+                            BarColumn(),
+                            DownloadColumn(),
+                            TaskProgressColumn(),
+                            TimeRemainingColumn(),
+                            console=console
+                        ) as progress:
+                            task = progress.add_task(f"Downloading {os.path.basename(input_source)}", total=None)
+                            
+                            def progress_hook(count, block_size, total_size):
+                                if total_size > 0:
+                                    progress.update(task, total=total_size, completed=count * block_size)
+
+                            urllib.request.urlretrieve(input_source, temp_path, reporthook=progress_hook)
+                    else:
+                        urllib.request.urlretrieve(input_source, temp_path)
                     break
                 except Exception as e:
                     if attempt == max_retries - 1:

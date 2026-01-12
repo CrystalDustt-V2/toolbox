@@ -44,28 +44,44 @@ class BaseEngine:
 
     @property
     def path(self) -> Optional[str]:
-        if self._path is None:
-            # 1. Check user configuration first
-            config_path = config_manager.settings.engine_paths.get(self.name.lower())
-            if config_path and os.path.exists(config_path):
-                self._path = config_path
+        """Find the path to the engine binary by checking config, bundle, and system PATH."""
+        if self._path is not None:
+            return self._path
+
+        # 1. Check user configuration first
+        config_path = config_manager.settings.engine_paths.get(self.name.lower())
+        if config_path and os.path.exists(config_path):
+            self._path = config_path
+            return self._path
+
+        # 2. Check global bin path from config
+        global_bin = config_manager.settings.global_bin_path
+        if global_bin and os.path.exists(global_bin):
+            found_path = self._search_in_directory(Path(global_bin))
+            if found_path:
+                self._path = str(found_path)
                 return self._path
 
-            # 2. Check bundled binaries
-            bin_dir = get_bundled_bin_path()
-            if bin_dir:
-                # On Windows, binaries usually end in .exe
-                exts = [".exe", ""] if os.name == "nt" else [""]
-                for ext in exts:
-                    bundled_binary = bin_dir / f"{self.binary_name}{ext}"
-                    if bundled_binary.exists():
-                        self._path = str(bundled_binary)
-                        break
-            
-            # 2. If not found in bundle, check system PATH
-            if self._path is None:
-                self._path = shutil.which(self.binary_name)
+        # 3. Check bundled binaries
+        bin_dir = get_bundled_bin_path()
+        if bin_dir:
+            found_path = self._search_in_directory(bin_dir)
+            if found_path:
+                self._path = str(found_path)
+                return self._path
+        
+        # 4. Check system PATH
+        self._path = shutil.which(self.binary_name)
         return self._path
+
+    def _search_in_directory(self, directory: Path) -> Optional[Path]:
+        """Search for the binary in a specific directory with platform-specific extensions."""
+        exts = [".exe", ""] if os.name == "nt" else [""]
+        for ext in exts:
+            binary_path = directory / f"{self.binary_name}{ext}"
+            if binary_path.exists():
+                return binary_path
+        return None
 
     def run(self, args: List[str], check: bool = True) -> subprocess.CompletedProcess:
         if not self.is_available:

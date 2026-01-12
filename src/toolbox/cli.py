@@ -1,7 +1,14 @@
 import click
 import difflib
+import platform
+import subprocess
+import sys
+import urllib.request
+import yaml
+from pathlib import Path
 from rich.console import Console
 from rich.table import Table
+
 from toolbox.core.config import config_manager
 from toolbox.core.plugin import plugin_manager
 from toolbox.core.engine import engine_registry
@@ -10,6 +17,7 @@ from toolbox.core.workflow import WorkflowRunner
 console = Console()
 
 class FuzzyGroup(click.Group):
+    """Click group with fuzzy command matching."""
     def get_command(self, ctx, cmd_name):
         rv = click.Group.get_command(self, ctx, cmd_name)
         if rv is not None:
@@ -54,6 +62,7 @@ def config_list():
 def config_set(key, value):
     """Update a setting (key value). Use dots for nested keys (e.g. engine_paths.ffmpeg)."""
     # Simple type conversion
+    val: Any
     if value.lower() == "true":
         val = True
     elif value.lower() == "false":
@@ -76,24 +85,26 @@ def config_set(key, value):
                 current_paths[sub_key] = val
                 config_manager.update(engine_paths=current_paths)
             else:
-                # Fallback for other potential future nested keys
-                click.echo(f"Nested update for {main_key} not fully supported yet.")
+                console.print(f"[yellow]Nested update for '{main_key}' not fully supported yet.[/yellow]")
                 return
         else:
             config_manager.update(**{key: val})
             
         config_manager.save_config()
-        click.echo(f"Successfully set {key} to {val}")
+        console.print(f"[green]✓ Successfully set {key} to {val}[/green]")
     except Exception as e:
-        click.echo(f"Error setting {key}: {str(e)}")
+        console.print(f"[bold red]Error setting {key}:[/bold red] {str(e)}")
 
-@cli.group(name="plugins")
-def plugins_group():
-    """Manage and discover plugins."""
+@cli.group(name="plugin")
+def plugin_group():
+    """Manage and discover ToolBox plugins."""
     pass
 
-@plugins_group.command(name="list")
-def plugins_list():
+# Alias for backward compatibility
+cli.add_command(plugin_group, name="plugins")
+
+@plugin_group.command(name="list")
+def plugin_list():
     """List all installed plugins."""
     table = Table(title="Installed Plugins")
     table.add_column("Plugin", style="cyan")
@@ -106,11 +117,10 @@ def plugins_list():
     
     console.print(table)
 
-@plugins_group.command(name="search")
+@plugin_group.command(name="search")
 @click.argument("query", required=False)
-def plugins_search(query):
-    """Search for community plugins (Mock)."""
-    # This is a mock implementation for the open-source release
+def plugin_search(query):
+    """Search for community plugins."""
     community_plugins = [
         {"name": "toolbox-pdf-extra", "desc": "Advanced PDF merging and splitting", "author": "community"},
         {"name": "toolbox-crypto", "desc": "File encryption and decryption (AES/RSA)", "author": "community"},
@@ -131,9 +141,33 @@ def plugins_search(query):
             
     if count > 0:
         console.print(table)
-        console.print(f"\n[dim]To install a community plugin, use: pip install <plugin-name>[/dim]")
+        console.print(f"\n[dim]To install a community plugin, use: toolbox plugin install <plugin-name>[/dim]")
     else:
-        console.print(f"No community plugins found matching '{query}'.")
+        console.print(f"[yellow]No community plugins found matching '{query}'.[/yellow]")
+
+@plugin_group.command(name="install")
+@click.argument("plugin_name")
+def plugin_install(plugin_name):
+    """Install a community plugin (pip wrapper)."""
+    console.print(f"[yellow]Attempting to install plugin: {plugin_name}...[/yellow]")
+    
+    try:
+        subprocess.check_call([sys.executable, "-m", "pip", "install", plugin_name])
+        console.print(f"[green]✓ Successfully installed {plugin_name}[/green]")
+        console.print("[dim]Note: You may need to restart ToolBox to see the new plugin.[/dim]")
+    except subprocess.CalledProcessError:
+        console.print(f"[bold red]Error:[/bold red] Failed to install {plugin_name}. Ensure it exists on PyPI.")
+
+@plugin_group.command(name="create")
+@click.argument("name")
+def plugin_create(name):
+    """Create a new plugin scaffold."""
+    try:
+        path = plugin_manager.create_scaffold(name)
+        console.print(f"[green]Successfully created plugin scaffold at: {path}[/green]")
+        console.print(f"Restart ToolBox to see the new '{name}' command group.")
+    except Exception as e:
+        console.print(f"[bold red]Error:[/bold red] {str(e)}")
 
 @cli.command()
 @click.option("--show-paths", is_flag=True, help="Show absolute paths to engines")
@@ -177,17 +211,10 @@ def check_system():
     """Thoroughly check system readiness and environment."""
     console.print("[bold cyan]System Intelligence Check[/bold cyan]\n")
     
-    # Check Python version
-    import sys
     py_version = f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}"
     console.print(f"Python Version: [green]{py_version}[/green]")
-    
-    # Check OS
-    import platform
     console.print(f"Platform: [green]{platform.platform()}[/green]")
     
-    # Check bin directory
-    from pathlib import Path
     bin_dir = Path("bin")
     if bin_dir.exists():
         bin_files = list(bin_dir.glob("*"))
@@ -205,8 +232,6 @@ def check_system():
         except ImportError:
             console.print(f"- {dep}: [red]Missing[/red]")
 
-    # Check internet connectivity
-    import urllib.request
     console.print("\n[bold]Connectivity Check:[/bold]")
     try:
         urllib.request.urlopen("https://www.google.com", timeout=3)
@@ -214,7 +239,6 @@ def check_system():
     except Exception:
         console.print("- Internet: [red]Offline/Blocked[/red]")
 
-    # Engine validation
     console.print("\n[bold]Engine Validation:[/bold]")
     for name, available, hint in engine_registry.check_all():
         if available:
@@ -233,10 +257,16 @@ def check_system():
         else:
             console.print(f"- {name}: [red]Not found[/red]")
 
-@cli.command(name="run")
+@cli.group(name="workflow")
+def workflow_group():
+    """Manage and run automated workflows."""
+    pass
+
+@workflow_group.command(name="run")
 @click.argument("workflow_file", type=click.Path(exists=True))
 @click.option("-v", "--var", multiple=True, help="Override workflow variables (key=value)")
-def run_workflow(workflow_file, var):
+@click.option("--dry-run", is_flag=True, help="Validate workflow without executing commands")
+def run_workflow(workflow_file, var, dry_run):
     """Run a sequence of commands from a workflow YAML file."""
     overrides = {}
     for v in var:
@@ -246,26 +276,48 @@ def run_workflow(workflow_file, var):
 
     runner = WorkflowRunner(cli)
     try:
-        runner.run(workflow_file, overrides=overrides)
+        runner.run(workflow_file, overrides=overrides, dry_run=dry_run)
     except Exception as e:
         console.print(f"[bold red]Workflow failed:[/bold red] {str(e)}")
         raise click.Abort()
 
-@cli.group(name="plugin")
-def plugin_group():
-    """Manage ToolBox plugins."""
-    pass
-
-@plugin_group.command(name="create")
-@click.argument("name")
-def plugin_create(name):
-    """Create a new plugin scaffold."""
-    try:
-        path = plugin_manager.create_scaffold(name)
-        console.print(f"[green]Successfully created plugin scaffold at: {path}[/green]")
-        console.print(f"Restart ToolBox to see the new '{name}' command group.")
-    except Exception as e:
-        console.print(f"[bold red]Error:[/bold red] {str(e)}")
+@workflow_group.command(name="init")
+@click.argument("filename", default="workflow.yaml")
+def init_workflow(filename):
+    """Interactively create a new workflow file."""
+    console.print("[bold blue]Interactive Workflow Builder[/bold blue]")
+    
+    name = click.prompt("Workflow Name", default="My ToolBox Workflow")
+    description = click.prompt("Description", default="A series of ToolBox commands")
+    
+    steps = []
+    while True:
+        console.print(f"\n[bold]Adding Step {len(steps) + 1}[/bold]")
+        step_name = click.prompt("Step Name (e.g., 'Resize Images')")
+        command = click.prompt("ToolBox Command (e.g., 'image resize input.jpg -w 800')")
+        
+        steps.append({
+            "name": step_name,
+            "command": command
+        })
+        
+        if not click.confirm("Add another step?", default=True):
+            break
+            
+    workflow_data = {
+        "name": name,
+        "description": description,
+        "vars": {
+            "input_file": "input.jpg"
+        },
+        "steps": steps
+    }
+    
+    with open(filename, "w") as f:
+        yaml.dump(workflow_data, f, sort_keys=False)
+        
+    console.print(f"\n[bold green]✓ Workflow saved to {filename}[/bold green]")
+    console.print(f"Run it with: [cyan]toolbox workflow run {filename}[/cyan]")
 
 # Initialize plugins
 plugin_manager.load_plugins()

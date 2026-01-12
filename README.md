@@ -10,8 +10,9 @@ A powerful, universal, and offline CLI utility suite for file processing, conver
 - **Universal Input**: Every command supports both **local files** and **direct web links** (URLs).
 - **Modular Plugin Architecture**: Easily extendable with a clean plugin system.
 - **Engine-Based Execution**: Leverages industry-standard tools like FFmpeg, Tesseract, and LibreOffice.
-- **Workflow Automation**: Run complex sequences of commands from simple YAML files.
-- **Privacy First**: Fully offline processing (except for initial URL downloads).
+- **Workflow Automation**: Run complex sequences of commands from simple YAML files with parallel execution support.
+- **Dry-Run Mode**: Every command supports `--dry-run` to validate operations without making changes.
+- **Privacy First**: Fully offline processing (except for initial URL downloads) with built-in SSRF protection.
 
 ## 🧩 Plugins & Capabilities
 
@@ -94,6 +95,18 @@ toolbox file hash https://example.com/file.zip
 toolbox image to-sticker https://example.com/funny.gif
 ```
 
+### Dry-Run Verification
+```bash
+# See what would be renamed without actually doing it
+toolbox file batch-rename ./docs --prefix "v1_" --dry-run
+```
+
+### Workflow Automation
+```bash
+# Run a complex automation sequence
+toolbox workflow run examples/universal_demo.yaml
+```
+
 ### Advanced Media
 ```bash
 # Extract frames every 0.5 seconds
@@ -103,17 +116,33 @@ toolbox video extract-frames my_video.mp4 --interval 0.5
 toolbox audio normalize recording.mp3 -o balanced.mp3
 ```
 
-### Workflows
-Create a `workflow.yaml`:
-```yaml
-name: Process Image
-steps:
-  - command: image resize {{input}} --width 800
-  - command: image exif-strip {{output}}
-```
-Run it:
+### **Workflow Automation**
+Automate complex tasks using YAML workflows:
 ```bash
-toolbox run workflow.yaml --var input=photo.jpg
+# Interactively create a new workflow
+toolbox workflow init my_tasks.yaml
+
+# Run the workflow
+toolbox workflow run my_tasks.yaml
+
+# Run with variable overrides and dry-run
+toolbox workflow run my_tasks.yaml -v input_file=photo.jpg --dry-run
+```
+
+### **Batch Processing**
+Many commands now support processing multiple files at once using glob patterns:
+```bash
+# Resize all JPEGs in a folder
+toolbox image resize --glob "*.jpg" -w 800
+
+# Convert all videos in a folder to GIF
+toolbox video to-gif --glob "videos/*.mp4"
+```
+
+### **Global Engine Path**
+You can now set a global directory where ToolBox will look for engine binaries (ffmpeg, tesseract, etc.):
+```bash
+toolbox config set global_bin_path "C:\MyTools\bin"
 ```
 
 ## 🛠️ Configuration

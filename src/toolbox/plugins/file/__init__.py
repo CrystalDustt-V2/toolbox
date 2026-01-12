@@ -1,11 +1,17 @@
 import click
 import hashlib
 import os
+import datetime
 from pathlib import Path
+from typing import Optional
+
+from rich.table import Table
 from toolbox.core.plugin import BasePlugin, PluginMetadata
-from toolbox.core.io import get_input_path
+from toolbox.core.io import get_input_path, console
 
 class FilePlugin(BasePlugin):
+    """Plugin for file management utilities."""
+
     def get_metadata(self) -> PluginMetadata:
         return PluginMetadata(
             name="file",
@@ -13,7 +19,7 @@ class FilePlugin(BasePlugin):
             engine="python"
         )
 
-    def register_commands(self, group):
+    def register_commands(self, group: click.Group) -> None:
         @group.group(name="file")
         def file_group():
             """File management utilities."""
@@ -22,28 +28,38 @@ class FilePlugin(BasePlugin):
         @file_group.command(name="hash")
         @click.argument("input_source")
         @click.option("-a", "--algorithm", type=click.Choice(['md5', 'sha1', 'sha256', 'sha512']), default='sha256')
-        def calculate_hash(input_source, algorithm):
+        @click.option("--dry-run", is_flag=True, help="Show what would happen")
+        def calculate_hash(input_source: str, algorithm: str, dry_run: bool):
             """Calculate file checksum/hash. Supports local or URL."""
             with get_input_path(input_source) as path:
+                if dry_run:
+                    console.print(f"[bold yellow]Would calculate {algorithm.upper()} hash for {input_source}[/bold yellow]")
+                    return
+
                 hash_func = getattr(hashlib, algorithm)()
                 with open(path, "rb") as f:
                     for chunk in iter(lambda: f.read(4096), b""):
                         hash_func.update(chunk)
                 
-                click.echo(f"{algorithm.upper()}: {hash_func.hexdigest()}")
+                console.print(f"[bold cyan]{algorithm.upper()}:[/bold cyan] [green]{hash_func.hexdigest()}[/green]")
 
         @file_group.command(name="secure-delete")
         @click.argument("file_path", type=click.Path(exists=True))
         @click.option("-p", "--passes", type=int, default=3, help="Number of overwrite passes")
-        def secure_delete(file_path, passes):
+        @click.option("--dry-run", is_flag=True, help="Show what would happen")
+        def secure_delete(file_path: str, passes: int, dry_run: bool):
             """Securely delete a file by overwriting it multiple times."""
             path = Path(file_path)
             if not path.is_file():
-                click.echo("Error: Secure delete only works on files.")
+                console.print(f"[bold red]Error:[/bold red] Secure delete only works on files.")
+                return
+
+            if dry_run:
+                console.print(f"[bold yellow]Would securely delete {file_path} with {passes} passes[/bold yellow]")
                 return
 
             size = path.stat().st_size
-            click.echo(f"Securely deleting {file_path} ({passes} passes)...")
+            console.print(f"[yellow]Securely deleting {file_path} ({passes} passes)...[/yellow]")
             
             with open(path, "ba+", buffering=0) as f:
                 for i in range(passes):
@@ -53,12 +69,13 @@ class FilePlugin(BasePlugin):
                     os.fsync(f.fileno())
             
             os.remove(path)
-            click.echo("File securely deleted.")
+            console.print(f"[green]✓ File securely deleted.[/green]")
 
         @file_group.command(name="rename")
         @click.argument("src", type=click.Path(exists=True))
         @click.argument("dst")
-        def rename_file(src, dst):
+        @click.option("--dry-run", is_flag=True, help="Show what would happen")
+        def rename_file(src: str, dst: str, dry_run: bool):
             """Rename or move a file."""
             src_path = Path(src)
             dst_path = Path(dst)
@@ -67,8 +84,12 @@ class FilePlugin(BasePlugin):
                 if not click.confirm(f"Destination {dst} already exists. Overwrite?"):
                     return
 
+            if dry_run:
+                console.print(f"[bold yellow]Would rename {src} to {dst}[/bold yellow]")
+                return
+
             src_path.rename(dst_path)
-            click.echo(f"Renamed {src} to {dst}")
+            console.print(f"[green]✓ Renamed {src} to {dst}[/green]")
 
         @file_group.command(name="batch-rename")
         @click.argument("directory", type=click.Path(exists=True))
@@ -77,7 +98,8 @@ class FilePlugin(BasePlugin):
         @click.option("-f", "--find", help="String to find")
         @click.option("-r", "--replace", help="String to replace with")
         @click.option("-e", "--ext", help="Filter by extension (e.g., .jpg)")
-        def batch_rename(directory, prefix, suffix, find, replace, ext):
+        @click.option("--dry-run", is_flag=True, help="Show what would happen")
+        def batch_rename(directory: str, prefix: Optional[str], suffix: Optional[str], find: Optional[str], replace: Optional[str], ext: Optional[str], dry_run: bool):
             """Batch rename files in a directory."""
             dir_path = Path(directory)
             count = 0
@@ -102,25 +124,35 @@ class FilePlugin(BasePlugin):
                 new_path = dir_path / new_filename
                 
                 if new_path != file:
+                    if dry_run:
+                        console.print(f"[bold yellow]Would rename {file.name} to {new_filename}[/bold yellow]")
+                        continue
+                        
                     file.rename(new_path)
                     count += 1
             
-            click.echo(f"Renamed {count} files.")
+            if not dry_run:
+                console.print(f"[green]✓ Renamed {count} files.[/green]")
 
         @file_group.command(name="info")
         @click.argument("file_path", type=click.Path(exists=True))
-        def file_info(file_path):
+        def file_info(file_path: str):
             """Get detailed file information."""
             p = Path(file_path)
             stats = p.stat()
             
-            import datetime
             created = datetime.datetime.fromtimestamp(stats.st_ctime).strftime('%Y-%m-%d %H:%M:%S')
             modified = datetime.datetime.fromtimestamp(stats.st_mtime).strftime('%Y-%m-%d %H:%M:%S')
             
-            click.echo(f"Name: {p.name}")
-            click.echo(f"Size: {stats.st_size} bytes ({stats.st_size / 1024:.2f} KB)")
-            click.echo(f"Absolute Path: {p.absolute()}")
-            click.echo(f"Extension: {p.suffix}")
-            click.echo(f"Created: {created}")
-            click.echo(f"Modified: {modified}")
+            table = Table(title=f"File Information: {p.name}")
+            table.add_column("Property", style="cyan")
+            table.add_column("Value", style="green")
+            
+            table.add_row("Name", p.name)
+            table.add_row("Size", f"{stats.st_size} bytes ({stats.st_size / 1024:.2f} KB)")
+            table.add_row("Absolute Path", str(p.absolute()))
+            table.add_row("Extension", p.suffix)
+            table.add_row("Created", created)
+            table.add_row("Modified", modified)
+            
+            console.print(table)

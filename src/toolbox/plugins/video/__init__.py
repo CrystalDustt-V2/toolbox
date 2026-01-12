@@ -1,17 +1,23 @@
 import click
+import os
+from typing import Optional
+from pathlib import Path
 from toolbox.core.plugin import BasePlugin, PluginMetadata
-from toolbox.core.engine import engine_registry
+from toolbox.core.engine import engine_registry, console
 from toolbox.core.io import get_input_path
+from toolbox.core.utils import batch_process
 
 class VideoPlugin(BasePlugin):
+    """Plugin for video processing using FFmpeg."""
+
     def get_metadata(self) -> PluginMetadata:
         return PluginMetadata(
             name="video",
-            commands=["trim", "extract-audio", "to-gif", "compress", "to-sticker"],
+            commands=["trim", "extract-audio", "to-gif", "compress", "to-sticker", "extract-frames"],
             engine="ffmpeg"
         )
 
-    def register_commands(self, group):
+    def register_commands(self, group: click.Group) -> None:
         @group.group(name="video")
         def video_group():
             """Video processing tools (requires FFmpeg)."""
@@ -22,9 +28,14 @@ class VideoPlugin(BasePlugin):
         @click.option("--start", help="Start time (HH:MM:SS)")
         @click.option("--end", help="End time (HH:MM:SS)")
         @click.option("-o", "--output", type=click.Path(), default="trimmed.mp4")
-        def trim(input_file, start, end, output):
+        @click.option("--dry-run", is_flag=True, help="Show what would happen")
+        def trim(input_file: str, start: Optional[str], end: Optional[str], output: str, dry_run: bool):
             """Trim a video file. Supports local or URL."""
             ffmpeg = engine_registry.get("ffmpeg")
+            if not ffmpeg.is_available:
+                console.print("[bold red]Error:[/bold red] FFmpeg engine not found. Please install FFmpeg.")
+                return
+
             with get_input_path(input_file) as path:
                 args = ["-i", path]
                 if start:
@@ -33,57 +44,103 @@ class VideoPlugin(BasePlugin):
                     args.extend(["-to", end])
                 args.extend(["-c", "copy", output])
                 
+                if dry_run:
+                    console.print(f"[bold yellow]Would trim {input_file} (start={start}, end={end}) and save as {output}[/bold yellow]")
+                    return
+
                 ffmpeg.run_with_progress(args, label=f"Trimming {os.path.basename(path)}")
-            click.echo(f"Trimmed video saved to {output}")
+                console.print(f"[green]✓ Trimmed video saved to {output}[/green]")
 
         @video_group.command(name="extract-audio")
         @click.argument("input_file")
         @click.option("-o", "--output", type=click.Path(), default="audio.mp3")
-        def extract_audio(input_file, output):
+        @click.option("--dry-run", is_flag=True, help="Show what would happen")
+        def extract_audio(input_file: str, output: str, dry_run: bool):
             """Extract audio from a video file. Supports local or URL."""
             ffmpeg = engine_registry.get("ffmpeg")
+            if not ffmpeg.is_available:
+                console.print("[bold red]Error:[/bold red] FFmpeg engine not found. Please install FFmpeg.")
+                return
+
             with get_input_path(input_file) as path:
                 args = ["-i", path, "-q:a", "0", "-map", "a", output]
-                ffmpeg.run(args)
-            click.echo(f"Extracted audio to {output}")
+                
+                if dry_run:
+                    console.print(f"[bold yellow]Would extract audio from {input_file} and save as {output}[/bold yellow]")
+                    return
+
+                ffmpeg.run_with_progress(args, label=f"Extracting audio from {os.path.basename(path)}")
+                console.print(f"[green]✓ Extracted audio to {output}[/green]")
 
         @video_group.command(name="to-gif")
-        @click.argument("input_file")
-        @click.option("-o", "--output", type=click.Path(), default="output.gif")
+        @click.argument("input_file", required=False)
+        @click.option("-o", "--output", type=click.Path(), help="Output filename")
         @click.option("-fps", "--fps", type=int, default=10, help="Frames per second")
         @click.option("-w", "--width", type=int, default=480, help="GIF width")
-        def to_gif(input_file, output, fps, width):
+        @click.option("--dry-run", is_flag=True, help="Show what would happen")
+        @batch_process
+        def to_gif(input_file: str, output: Optional[str], fps: int, width: int, dry_run: bool):
             """Convert video to GIF. Supports local or URL."""
             ffmpeg = engine_registry.get("ffmpeg")
+            if not ffmpeg.is_available:
+                console.print("[bold red]Error:[/bold red] FFmpeg engine not found. Please install FFmpeg.")
+                return
+            
+            out_path = output or f"{Path(input_file).stem}.gif"
+
             with get_input_path(input_file) as path:
+                if dry_run:
+                    console.print(f"[bold yellow]Would convert {input_file} to GIF (fps={fps}, width={width}) and save as {out_path}[/bold yellow]")
+                    return
+
                 # Use a high-quality GIF conversion filter palette
                 filter_complex = f"fps={fps},scale={width}:-1:flags=lanczos,split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse"
-                args = ["-i", path, "-filter_complex", filter_complex, output]
+                args = ["-i", path, "-filter_complex", filter_complex, out_path]
                 ffmpeg.run_with_progress(args, label=f"Converting {os.path.basename(path)} to GIF")
-            click.echo(f"Converted to GIF: {output}")
+                console.print(f"[green]✓ Converted to GIF: {out_path}[/green]")
 
         @video_group.command(name="compress")
-        @click.argument("input_file")
+        @click.argument("input_file", required=False)
         @click.option("-crf", "--crf", type=int, default=28, help="Constant Rate Factor (lower is better quality, 0-51)")
         @click.option("-o", "--output", type=click.Path(), help="Output filename")
-        def compress(input_file, crf, output):
+        @click.option("--dry-run", is_flag=True, help="Show what would happen")
+        @batch_process
+        def compress(input_file: str, crf: int, output: Optional[str], dry_run: bool):
             """Compress video using H.264. Supports local or URL."""
             ffmpeg = engine_registry.get("ffmpeg")
+            if not ffmpeg.is_available:
+                console.print("[bold red]Error:[/bold red] FFmpeg engine not found. Please install FFmpeg.")
+                return
+
             with get_input_path(input_file) as path:
                 out_path = output or f"compressed_{os.path.basename(path)}"
+                
+                if dry_run:
+                    console.print(f"[bold yellow]Would compress {input_file} (crf={crf}) and save as {out_path}[/bold yellow]")
+                    return
+
                 args = ["-i", path, "-vcodec", "libx264", "-crf", str(crf), out_path]
                 ffmpeg.run_with_progress(args, label=f"Compressing {os.path.basename(path)}")
-            click.echo(f"Compressed video saved to {out_path}")
+                console.print(f"[green]✓ Compressed video saved to {out_path}[/green]")
 
         @video_group.command(name="to-sticker")
         @click.argument("input_file")
         @click.option("-o", "--output", type=click.Path(), help="Output filename")
         @click.option("--fps", type=int, default=15, help="Sticker FPS")
-        def to_sticker(input_file, output, fps):
+        @click.option("--dry-run", is_flag=True, help="Show what would happen")
+        def to_sticker(input_file: str, output: Optional[str], fps: int, dry_run: bool):
             """Convert a video to a sticker. Supports local or URL."""
             ffmpeg = engine_registry.get("ffmpeg")
+            if not ffmpeg.is_available:
+                console.print("[bold red]Error:[/bold red] FFmpeg engine not found. Please install FFmpeg.")
+                return
+
             with get_input_path(input_file) as path:
                 out_path = output or f"{input_file.split('?')[0].rsplit('.', 1)[0]}.webp"
+                
+                if dry_run:
+                    console.print(f"[bold yellow]Would convert {input_file} to sticker (fps={fps}) and save as {out_path}[/bold yellow]")
+                    return
                 
                 # WhatsApp sticker filter: 
                 # 1. Resize to fit 512x512 while maintaining aspect ratio
@@ -102,27 +159,36 @@ class VideoPlugin(BasePlugin):
                     out_path
                 ]
                 
-                ffmpeg.run_with_progress(args, label="Generating sticker")
-            click.echo(f"Video converted to sticker: {out_path}")
-            click.echo("Note: WhatsApp stickers should be < 1MB and usually < 6 seconds.")
+                ffmpeg.run_with_progress(args, label=f"Converting {os.path.basename(path)} to sticker")
+                console.print(f"[green]✓ Video converted to sticker: {out_path}[/green]")
+                console.print("[yellow]Note: WhatsApp stickers should be < 1MB and usually < 6 seconds.[/yellow]")
 
         @video_group.command(name="extract-frames")
         @click.argument("input_file")
         @click.option("-i", "--interval", type=float, default=1.0, help="Interval in seconds between frames")
         @click.option("-o", "--output-dir", type=click.Path(), default="frames", help="Output directory")
         @click.option("-f", "--format", type=click.Choice(['jpg', 'png']), default='jpg')
-        def extract_frames(input_file, interval, output_dir, format):
+        @click.option("--dry-run", is_flag=True, help="Show what would happen")
+        def extract_frames(input_file: str, interval: float, output_dir: str, format: str, dry_run: bool):
             """Extract frames from video at intervals. Supports local or URL."""
             ffmpeg = engine_registry.get("ffmpeg")
+            if not ffmpeg.is_available:
+                console.print("[bold red]Error:[/bold red] FFmpeg engine not found. Please install FFmpeg.")
+                return
+
             with get_input_path(input_file) as path:
-                out_path = Path(output_dir)
-                out_path.mkdir(parents=True, exist_ok=True)
+                out_dir = Path(output_dir)
                 
-                # ffmpeg -i input.mp4 -vf fps=1/interval out_%03d.jpg
+                if dry_run:
+                    console.print(f"[bold yellow]Would extract frames from {input_file} (interval={interval}, format={format}) to {output_dir}[/bold yellow]")
+                    return
+
+                out_dir.mkdir(parents=True, exist_ok=True)
+                
                 args = [
                     "-i", path,
                     "-vf", f"fps=1/{interval}",
-                    str(out_path / f"frame_%04d.{format}")
+                    str(out_dir / f"frame_%04d.{format}")
                 ]
-                ffmpeg.run(args)
-            click.echo(f"Frames extracted to {output_dir}")
+                ffmpeg.run_with_progress(args, label=f"Extracting frames from {os.path.basename(path)}")
+                console.print(f"[green]✓ Frames extracted to {output_dir}[/green]")

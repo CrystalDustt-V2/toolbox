@@ -24,8 +24,10 @@ def test_file_hash(runner, temp_file):
 def test_file_info(runner, temp_file):
     result = runner.invoke(cli, ["file", "info", str(temp_file)])
     assert result.exit_code == 0
-    assert f"Name: {temp_file.name}" in result.output
-    assert "Size: 11 bytes" in result.output
+    # Rich table output might look different, check for presence of name and size
+    assert temp_file.name in result.output
+    assert "Size" in result.output
+    assert "11 bytes" in result.output
 
 def test_file_rename(runner, temp_file):
     new_name = temp_file.parent / "renamed.txt"

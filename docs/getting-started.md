@@ -33,10 +33,32 @@ sudo apt install ffmpeg tesseract-ocr poppler-utils libreoffice
 brew install ffmpeg tesseract poppler libreoffice
 ```
 
-## Basic Usage
+### 3. Configure Engine Paths (Optional)
 
-ToolBox follows a consistent pattern: `toolbox <plugin> <command> [args]`.
+If your engines are not in your system PATH, you can tell ToolBox where to find them:
 
-- `toolbox image ocr my_image.png`
-- `toolbox video to-gif my_video.mp4`
-- `toolbox config list`
+```bash
+# Set path for a specific engine
+toolbox config set engine_paths.ffmpeg "C:\ffmpeg\bin\ffmpeg.exe"
+
+# OR set a global bin directory to search in
+toolbox config set global_bin_path "D:\portable_tools\bin"
+```
+
+## First Steps
+
+### Batch Processing
+
+ToolBox makes it easy to process multiple files:
+
+```bash
+toolbox image resize --glob "*.png" --width 1280
+```
+
+### Creating Workflows
+
+Use the interactive builder to create automation:
+
+```bash
+toolbox workflow init my_automation.yaml
+```

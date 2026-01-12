@@ -1,4 +1,5 @@
 import os
+import click
 import pytest
 from unittest.mock import patch, MagicMock
 from pathlib import Path
@@ -14,14 +15,16 @@ def test_get_input_path_local_exists(tmp_path):
         assert os.path.exists(path)
 
 def test_get_input_path_local_not_exists():
-    with pytest.raises(FileNotFoundError):
+    with pytest.raises(click.ClickException) as excinfo:
         with get_input_path("non_existent_file.txt") as path:
             pass
+    assert "Local file not found" in str(excinfo.value)
 
 @patch("urllib.request.urlretrieve")
 @patch("os.remove")
 @patch("os.close")
-def test_get_input_path_url(mock_close, mock_remove, mock_urlretrieve):
+@patch("toolbox.core.io.is_safe_url", return_value=True)
+def test_get_input_path_url(mock_safe, mock_close, mock_remove, mock_urlretrieve):
     url = "https://example.com/image.png"
     
     # We need to mock tempfile.mkstemp to control the path
@@ -30,7 +33,9 @@ def test_get_input_path_url(mock_close, mock_remove, mock_urlretrieve):
         
         with get_input_path(url) as path:
             assert path == "/tmp/fake_temp_file.png"
-            mock_urlretrieve.assert_called_once_with(url, "/tmp/fake_temp_file.png")
+            # Verify urlretrieve was called. We use ANY for reporthook since it's a local function
+            from unittest.mock import ANY
+            mock_urlretrieve.assert_called_once_with(url, "/tmp/fake_temp_file.png", reporthook=ANY)
             mock_close.assert_called_once_with(99)
         
         # Verify cleanup
@@ -43,7 +48,8 @@ def test_get_input_path_url(mock_close, mock_remove, mock_urlretrieve):
 @patch("os.path.exists")
 @patch("os.remove")
 @patch("os.close")
-def test_get_input_path_url_cleanup(mock_close, mock_remove, mock_exists, mock_urlretrieve):
+@patch("toolbox.core.io.is_safe_url", return_value=True)
+def test_get_input_path_url_cleanup(mock_safe, mock_close, mock_remove, mock_exists, mock_urlretrieve):
     url = "https://example.com/video.mp4"
     fake_path = "/tmp/fake_video.mp4"
     
@@ -59,7 +65,8 @@ def test_get_input_path_url_cleanup(mock_close, mock_remove, mock_exists, mock_u
         mock_close.assert_called_once_with(99)
 
 @patch("os.close")
-def test_get_input_path_url_with_query_params(mock_close):
+@patch("toolbox.core.io.is_safe_url", return_value=True)
+def test_get_input_path_url_with_query_params(mock_safe, mock_close):
     # Test that suffix is correctly extracted even with query parameters
     url = "https://example.com/doc.pdf?version=1&auth=abc"
     

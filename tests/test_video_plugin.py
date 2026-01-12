@@ -23,8 +23,8 @@ def test_video_to_sticker(mock_get_engine, runner):
         assert "Video converted to sticker" in result.output
         
         # Verify FFmpeg was called with correct arguments
-        mock_ffmpeg.run.assert_called()
-        args = mock_ffmpeg.run.call_args[0][0]
+        mock_ffmpeg.run_with_progress.assert_called()
+        args = mock_ffmpeg.run_with_progress.call_args[0][0]
         assert "-i" in args
         assert "test.mp4" in args
         assert "sticker.webp" in args
