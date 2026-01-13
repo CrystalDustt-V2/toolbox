@@ -129,8 +129,6 @@ toolbox workflow schedule maintenance.yaml --interval 60 --immediate
 # Run a command and save detailed logs to a file
 toolbox file hash large_file.iso --log-file ./logs/audit.log
 ```
-toolbox file batch-rename ./docs --prefix "v1_" --dry-run
-```
 
 ### Workflow Automation
 ```bash
