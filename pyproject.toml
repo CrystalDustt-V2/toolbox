@@ -1,8 +1,8 @@
 [project]
 name = "toolbox-universal"
-version = "0.2.0"
+version = "0.2.1"
 description = "A universal high-performance CLI command tool for offline file processing, AI tasks, and automation."
-authors = [{ name = "ToolBox Architect" }]
+authors = [{ name = "CrystalDust - The Creator Of ToolBox (toolbox-universal)" }]
 readme = "README.md"
 license = { text = "MIT" }
 keywords = ["cli", "file-processing", "automation", "workflow", "ai", "security"]

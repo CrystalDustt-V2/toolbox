@@ -62,17 +62,29 @@ ToolBox relies on specialized engines:
 
 ### Installation
 
-1. **Clone & Install**:
-   ```bash
-   git clone https://github.com/CrystalDustt-V2/toolbox.git
-   cd toolbox
-   pip install .
-   ```
+#### 🚀 Recommended: Using pipx (Automatic PATH setup)
+`pipx` is the best way to install ToolBox. It installs the tool in an isolated environment and **automatically handles your system PATH** so the `toolbox` command works immediately.
 
-   *Alternatively, once published to PyPI:*
-   ```bash
-   pip install toolbox-universal
-   ```
+```bash
+# If you don't have pipx yet:
+python -m pip install --user pipx
+python -m pipx ensurepath
+
+# Install ToolBox:
+pipx install toolbox-universal
+```
+*Note: You may need to restart your terminal after installing `pipx` for the first time.*
+
+#### Alternative: Using pip
+```bash
+pip install toolbox-universal
+```
+
+#### Portable: Run via Python
+If you don't want to install it:
+```bash
+python -m toolbox --help
+```
 
 2. **Setup Engines (Windows)**:
    ```bash

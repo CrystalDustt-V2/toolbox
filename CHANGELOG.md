@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.1] - 2026-01-13
+### Added
+- **Module Execution Support**: Added `src/toolbox/__main__.py` allowing the tool to be run via `python -m toolbox`.
+
+### Fixed
+- **CLI Entry Point Visibility**: Addressed issues where the `toolbox` command might not be immediately available in the Windows PATH by providing a module-level fallback.
+
 ## [0.2.0] - 2026-01-12
 ### Added
 - **High-Performance Concurrency**: Added `--parallel` and `--workers` flags to `batch_process` commands for multi-threaded execution.

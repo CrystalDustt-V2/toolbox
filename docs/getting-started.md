@@ -2,9 +2,33 @@
 
 ## Installation
 
-### From PyPI
+### 🚀 Recommended: Using `pipx`
+`pipx` is the standard for installing Python CLI applications. It ensures that ToolBox is isolated from other packages and, most importantly, **it handles your system PATH automatically**.
+
+#### 1. Install `pipx` (if you haven't)
+If you don't have `pipx` installed, run these commands:
+```bash
+python -m pip install --user pipx
+python -m pipx ensurepath
+```
+*Restart your terminal after this step.*
+
+#### 2. Install ToolBox
+```bash
+pipx install toolbox-universal
+```
+
+### Using `pip` (Advanced)
+If you prefer using standard `pip`:
 ```bash
 pip install toolbox-universal
+```
+> **Note**: On Windows, you might need to manually add the Python `Scripts` folder to your PATH for the `toolbox` command to work.
+
+### Portable: Running via Python
+You can always run ToolBox without a direct command by using the module execution:
+```bash
+python -m toolbox [command]
 ```
 
 ### From Source

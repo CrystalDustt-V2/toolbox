@@ -14,12 +14,9 @@ ToolBox is a universal, offline CLI utility suite designed to simplify common fi
 ## Quick Start
 
 ```bash
-# Install ToolBox
-pip install .
+# Install ToolBox using pipx (recommended)
+pipx install toolbox-universal
 
-# Check if everything is ready
-toolbox status
-
-# Try your first command
-toolbox file hash my_file.zip
+# Or run instantly without installation
+python -m toolbox status
 ```
