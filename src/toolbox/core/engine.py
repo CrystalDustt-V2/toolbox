@@ -33,6 +33,7 @@ class BaseEngine:
         self.binary_name = binary_name
         self._path: Optional[str] = None
         self.verbose = False
+        self.use_gpu = False
 
     def get_install_hint(self) -> str:
         """Return a string with instructions on how to install this engine."""

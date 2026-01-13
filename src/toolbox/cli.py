@@ -35,16 +35,23 @@ class FuzzyGroup(click.Group):
 @click.group(cls=FuzzyGroup)
 @click.version_option(version=__version__)
 @click.option("--verbose", is_flag=True, help="Enable verbose output for engines")
+@click.option("--gpu", is_flag=True, help="Enable GPU acceleration for AI tasks")
 @click.option("--log-file", type=click.Path(), help="Path to log file")
-def cli(verbose, log_file):
+def cli(verbose, gpu, log_file):
     """ToolBox: A universal offline CLI utility suite."""
     log_level = logging.DEBUG if verbose else logging.INFO
     setup_logging(level=log_level, log_file=Path(log_file) if log_file else None)
     
     if verbose:
         logger.debug("Verbose mode enabled")
-        for name, engine in engine_registry.engines.items():
-            engine.verbose = True
+    
+    # Store GPU preference in config
+    config_manager.set("gpu_enabled", gpu)
+    
+    for name, engine in engine_registry.engines.items():
+        engine.verbose = verbose
+        if hasattr(engine, "use_gpu"):
+            engine.use_gpu = gpu
 
 @cli.group(name="config")
 def config_group():

@@ -55,12 +55,35 @@ class WorkflowRunner:
         condition = step.get("if")
         if condition:
             condition = self._substitute_vars(condition)
-            if condition.lower() in ["false", "0", "no", "none", ""]:
-                console.print(f"[dim]Skipping {step_name} (condition '{condition}' is false)[/dim]")
-                return True
+            # Evaluate basic expressions
+            if "==" in condition:
+                left, right = [s.strip() for s in condition.split("==", 1)]
+                if left != right:
+                    return self._handle_skip(step, step_name)
+            elif "!=" in condition:
+                left, right = [s.strip() for s in condition.split("!=", 1)]
+                if left == right:
+                    return self._handle_skip(step, step_name)
+            elif condition.lower() in ["false", "0", "no", "none", ""]:
+                return self._handle_skip(step, step_name)
         
+        # Handle branching
+        if "then" in step:
+            console.print(f"[bold blue]>>> Branch 'then' for {step_name}...[/bold blue]")
+            for i, substep in enumerate(step["then"]):
+                if not self._execute_step(substep, i, dry_run):
+                    return False
+            return True
+
         command_str = step.get("command")
         if not command_str:
+            # Maybe it's just a variable assignment
+            if "set" in step:
+                for k, v in step["set"].items():
+                    self.variables[k] = self._substitute_vars(v)
+                    console.print(f"[dim]Variable set: {k} = {self.variables[k]}[/dim]")
+                return True
+            
             console.print(f"[red]Error: Step '{step_name}' has no command.[/red]")
             return False
 
@@ -77,14 +100,38 @@ class WorkflowRunner:
             args = shlex.split(command_str)
             # Use standalone_mode=False to avoid sys.exit() on error
             self.cli_group.main(args=args, standalone_mode=False)
+            
+            # Capture output if register is present (mocking for now as click.main doesn't return output easily)
+            # In a real scenario, we might want to capture stdout
+            
             console.print(f"[green]✓ {step_name} completed successfully.[/green]")
             return True
         except Exception as e:
+            # Handle 'else' branch if execution fails
+            if "else" in step:
+                console.print(f"[bold yellow]>>> Execution failed, running 'else' branch for {step_name}...[/bold yellow]")
+                for i, substep in enumerate(step["else"]):
+                    if not self._execute_step(substep, i, dry_run):
+                        return False
+                return True
+
             console.print(f"[bold red]✗ {step_name} failed:[/bold red] {e}")
             if step.get("continue_on_error", False):
                 console.print(f"[yellow]Continuing workflow as 'continue_on_error' is set.[/yellow]")
                 return True
             return False
+
+    def _handle_skip(self, step: Dict[str, Any], step_name: str) -> bool:
+        """Handle skipped step, running 'else' branch if present."""
+        if "else" in step:
+            console.print(f"[bold yellow]>>> Condition failed, running 'else' branch for {step_name}...[/bold yellow]")
+            for i, substep in enumerate(step["else"]):
+                if not self._execute_step(substep, i):
+                    return False
+            return True
+        
+        console.print(f"[dim]Skipping {step_name} (condition is false)[/dim]")
+        return True
 
     def run(self, workflow_path: str, overrides: Optional[Dict[str, str]] = None, dry_run: bool = False):
         """Run a workflow from a YAML file."""

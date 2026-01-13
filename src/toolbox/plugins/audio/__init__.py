@@ -7,13 +7,13 @@ from toolbox.core.engine import engine_registry, console
 from toolbox.core.io import get_input_path
 
 class AudioPlugin(BasePlugin):
-    """Plugin for audio processing using FFmpeg."""
+    """Plugin for audio processing using FFmpeg and Whisper."""
 
     def get_metadata(self) -> PluginMetadata:
         return PluginMetadata(
             name="audio",
-            commands=["convert", "trim", "merge", "normalize"],
-            engine="ffmpeg"
+            commands=["convert", "trim", "merge", "normalize", "stt"],
+            engine="ffmpeg/whisper"
         )
 
     def register_commands(self, group: click.Group) -> None:
@@ -21,6 +21,38 @@ class AudioPlugin(BasePlugin):
         def audio_group():
             """Audio processing tools (requires FFmpeg)."""
             pass
+
+        @audio_group.command(name="stt")
+        @click.argument("input_file")
+        @click.option("-m", "--model", default="base", help="Whisper model size (tiny, base, small, medium, large)")
+        @click.option("-o", "--output", type=click.Path(), help="Output text file")
+        @click.option("--gpu", is_flag=True, help="Use GPU for inference")
+        def stt(input_file: str, model: str, output: Optional[str], gpu: bool):
+            """Transcribe audio to text using OpenAI Whisper."""
+            import whisper
+            import torch
+            
+            device = "cuda" if (gpu or torch.cuda.is_available()) else "cpu"
+            console.print(f"[blue]Loading Whisper model '{model}' on {device}...[/blue]")
+            
+            try:
+                model_instance = whisper.load_model(model, device=device)
+            except Exception as e:
+                console.print(f"[bold red]Error loading model:[/bold red] {e}")
+                return
+
+            with get_input_path(input_file) as path:
+                console.print(f"[blue]Transcribing {input_file}...[/blue]")
+                result = model_instance.transcribe(str(path))
+                
+                text = result["text"].strip()
+                out_path = output or f"{Path(path).stem}.txt"
+                
+                with open(out_path, "w", encoding="utf-8") as f:
+                    f.write(text)
+                
+                console.print(f"[green]✓ Transcription saved to {out_path}[/green]")
+                console.print(f"\n[bold]Preview:[/bold]\n{text[:200]}...")
 
         @audio_group.command(name="convert")
         @click.argument("input_file")

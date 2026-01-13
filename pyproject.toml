@@ -1,6 +1,6 @@
 [project]
 name = "toolbox-universal"
-version = "0.2.1"
+version = "0.3.0-dev"
 description = "A universal high-performance CLI command tool for offline file processing, AI tasks, and automation."
 authors = [{ name = "CrystalDust - The Creator Of ToolBox (toolbox-universal)" }]
 readme = "README.md"
@@ -27,6 +27,11 @@ dependencies = [
     "onnxruntime>=1.16.0",
     "watchdog>=3.0.0",
     "schedule>=1.2.1",
+    "opencv-python>=4.8.0",
+    "openai-whisper>=20231117",
+    "soundfile>=0.12.1",
+    "torch>=2.0.0",
+    "numpy>=1.24.0",
 ]
 requires-python = ">=3.10"
 

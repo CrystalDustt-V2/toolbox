@@ -33,8 +33,17 @@ def build():
         "--hidden-import=toolbox.plugins.image",
         "--hidden-import=toolbox.plugins.network",
         "--hidden-import=toolbox.plugins.pdf",
+        "--hidden-import=toolbox.plugins.security",
         "--hidden-import=toolbox.plugins.util",
         "--hidden-import=toolbox.plugins.video",
+        # AI and Data dependencies
+        "--hidden-import=onnxruntime",
+        "--hidden-import=whisper",
+        "--hidden-import=cv2",
+        "--hidden-import=torch",
+        "--hidden-import=numpy",
+        "--hidden-import=cryptography",
+        "--hidden-import=rembg",
         # Ensure common dependencies are bundled
         "--hidden-import=pyyaml",
         "--hidden-import=rich",

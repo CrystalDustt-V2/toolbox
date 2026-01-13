@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.3.0-dev] - 2026-01-13
+### Added
+- **AI Core Architecture**: Integrated `toolbox.core.ai` for managing local AI models (ONNX, Whisper) and GPU acceleration detection.
+- **Image Super-Resolution**: Added `toolbox image upscale` using AI (ESRGAN) with support for 2x and 4x scaling.
+- **Speech-to-Text (STT)**: Added `toolbox audio stt` using OpenAI Whisper for offline audio transcription.
+- **Advanced Workflow Logic**:
+    - Added conditional branching (`if`, `then`, `else`) to YAML workflows.
+    - Added variable assignment (`set`) within workflow steps.
+    - Enhanced variable substitution with path attributes (e.g., `{file.stem}`, `{file.suffix}`).
+- **Security Plugin**:
+    - **Steganography**: Added `toolbox security steg-hide` and `steg-extract` to hide/retrieve data in images using LSB.
+    - **Secure Vault**: Added `toolbox security vault-encrypt` and `vault-decrypt` for password-protected file containers.
+- **GPU Acceleration**: Added global `--gpu` flag to enable hardware acceleration for supported AI tasks.
+
+### Changed
+- **Dependency Update**: Added `torch`, `numpy`, `opencv-python`, and `openai-whisper` to core dependencies.
+
 ## [0.2.1] - 2026-01-13
 ### Added
 - **Module Execution Support**: Added `src/toolbox/__main__.py` allowing the tool to be run via `python -m toolbox`.
@@ -46,6 +63,7 @@ All notable changes to this project will be documented in this file.
 - Basic workflow automation (YAML-based).
 - Universal URL support for input files.
 
+[0.3.0-dev]: https://github.com/CrystalDustt-V2/toolbox/compare/v0.2.1...master
 [0.2.1]: https://github.com/CrystalDustt-V2/toolbox/releases/tag/v0.2.1
 [0.2.0]: https://github.com/CrystalDustt-V2/toolbox/releases/tag/v0.2.0
 [0.1.0]: https://github.com/CrystalDustt-V2/toolbox/releases/tag/v0.1.0

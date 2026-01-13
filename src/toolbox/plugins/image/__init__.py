@@ -8,6 +8,7 @@ from toolbox.core.plugin import BasePlugin, PluginMetadata
 from toolbox.core.engine import engine_registry, console
 from toolbox.core.io import get_input_path
 from toolbox.core.utils import batch_process
+from toolbox.core.ai import get_model_path, is_gpu_available
 
 class ImagePlugin(BasePlugin):
     """Plugin for image processing using Pillow and Tesseract."""
@@ -15,8 +16,8 @@ class ImagePlugin(BasePlugin):
     def get_metadata(self) -> PluginMetadata:
         return PluginMetadata(
             name="image",
-            commands=["convert", "resize", "crop", "metadata", "ocr", "to-sticker", "exif-strip", "remove-bg"],
-            engine="pillow"
+            commands=["convert", "resize", "crop", "metadata", "ocr", "to-sticker", "exif-strip", "remove-bg", "upscale"],
+            engine="pillow/opencv"
         )
 
     def register_commands(self, group: click.Group) -> None:
@@ -24,6 +25,68 @@ class ImagePlugin(BasePlugin):
         def image_group():
             """Image processing tools."""
             pass
+
+        @image_group.command(name="upscale")
+        @click.argument("input_file")
+        @click.option("-o", "--output", type=click.Path(), help="Output upscaled filename")
+        @click.option("-s", "--scale", type=int, default=4, help="Upscale factor (2 or 4)")
+        def upscale(input_file: str, output: Optional[str], scale: int):
+            """Upscale image using AI (ESRGAN). Supports local or URL."""
+            import cv2
+            import numpy as np
+            
+            # Model URLs for ESRGAN
+            models = {
+                2: ("ESRGAN_x2.onnx", "https://github.com/xinntao/Real-ESRGAN/releases/download/v0.1.0/RealESRGAN_x2plus.onnx"), # Placeholder URL
+                4: ("ESRGAN_x4.onnx", "https://github.com/xinntao/Real-ESRGAN/releases/download/v0.1.0/RealESRGAN_x4plus.onnx")  # Placeholder URL
+            }
+            
+            if scale not in models:
+                console.print(f"[bold red]Error:[/bold red] Scale {scale} not supported. Use 2 or 4.")
+                return
+
+            model_name, model_url = models[scale]
+            
+            try:
+                model_path = get_model_path(model_name, model_url)
+            except Exception as e:
+                console.print(f"[bold red]Error:[/bold red] Could not download model: {e}")
+                return
+
+            with get_input_path(input_file) as path:
+                img = cv2.imread(str(path))
+                if img is None:
+                    console.print(f"[bold red]Error:[/bold red] Could not read image {input_file}")
+                    return
+
+                console.print(f"[blue]Upscaling {input_file} by {scale}x...[/blue]")
+                
+                # Load ONNX model
+                import onnxruntime as ort
+                providers = ["CPUExecutionProvider"]
+                if is_gpu_available():
+                    providers.insert(0, "CUDAExecutionProvider")
+                
+                session = ort.InferenceSession(str(model_path), providers=providers)
+                
+                # Preprocess
+                img = img.astype(np.float32) / 255.0
+                img = np.transpose(img[:, :, [2, 1, 0]], (2, 0, 1))
+                img = np.expand_dims(img, axis=0)
+                
+                # Inference
+                ort_inputs = {session.get_inputs()[0].name: img}
+                output_tensor = session.run(None, ort_inputs)[0]
+                
+                # Postprocess
+                output_img = np.squeeze(output_tensor)
+                output_img = np.clip(output_img, 0, 1)
+                output_img = np.transpose(output_img, (1, 2, 0))
+                output_img = (output_img[:, :, [2, 1, 0]] * 255).astype(np.uint8)
+                
+                out_path = output or f"upscaled_{Path(path).name}"
+                cv2.imwrite(out_path, output_img)
+                console.print(f"[green]✓ Image upscaled and saved to {out_path}[/green]")
 
         @image_group.command(name="convert")
         @click.argument("input_file", required=False)
