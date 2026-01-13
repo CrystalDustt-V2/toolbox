@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## [0.3.0-dev] - 2026-01-13
+## [0.3.0] - 2026-01-13
 ### Added
 - **AI Core Architecture**: Integrated `toolbox.core.ai` for managing local AI models (ONNX, Whisper) and GPU acceleration detection.
 - **Image Super-Resolution**: Added `toolbox image upscale` using AI (ESRGAN) with support for 2x and 4x scaling.
@@ -18,6 +18,7 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 - **Dependency Update**: Added `torch`, `numpy`, `opencv-python`, and `openai-whisper` to core dependencies.
+- **Stable Release**: Promotion of `0.3.0-dev` features to stable production status.
 
 ## [0.2.1] - 2026-01-13
 ### Added
@@ -63,7 +64,7 @@ All notable changes to this project will be documented in this file.
 - Basic workflow automation (YAML-based).
 - Universal URL support for input files.
 
-[0.3.0-dev]: https://github.com/CrystalDustt-V2/toolbox/compare/v0.2.1...master
+[0.3.0]: https://github.com/CrystalDustt-V2/toolbox/compare/v0.2.1...master
 [0.2.1]: https://github.com/CrystalDustt-V2/toolbox/releases/tag/v0.2.1
 [0.2.0]: https://github.com/CrystalDustt-V2/toolbox/releases/tag/v0.2.0
 [0.1.0]: https://github.com/CrystalDustt-V2/toolbox/releases/tag/v0.1.0

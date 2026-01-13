@@ -46,7 +46,7 @@ def cli(verbose, gpu, log_file):
         logger.debug("Verbose mode enabled")
     
     # Store GPU preference in config
-    config_manager.set("gpu_enabled", gpu)
+    config_manager.update(gpu_enabled=gpu)
     
     for name, engine in engine_registry.engines.items():
         engine.verbose = verbose

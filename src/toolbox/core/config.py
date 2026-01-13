@@ -11,6 +11,7 @@ class ToolBoxConfig(BaseModel):
     video_engine: str = Field(default="ffmpeg")
     image_engine: str = Field(default="imagemagick")
     auto_overwrite: bool = Field(default=False)
+    gpu_enabled: bool = Field(default=False)
     plugins_dir: Optional[str] = Field(default=None)
     global_bin_path: Optional[str] = Field(default=None)
     engine_paths: Dict[str, str] = Field(default_factory=dict)

@@ -1,6 +1,6 @@
 [project]
 name = "toolbox-universal"
-version = "0.3.0-dev"
+version = "0.3.0"
 description = "A universal high-performance CLI command tool for offline file processing, AI tasks, and automation."
 authors = [{ name = "CrystalDust - The Creator Of ToolBox (toolbox-universal)" }]
 readme = "README.md"

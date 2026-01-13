@@ -8,7 +8,7 @@ class PluginMetadata(BaseModel):
     name: str
     commands: List[str]
     engine: str
-    version: str = "0.3.0-dev"
+    version: str = "0.3.0"
     dependencies: List[str] = []
 
 class BasePlugin(ABC):

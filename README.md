@@ -7,34 +7,33 @@ A powerful, universal, and offline CLI utility suite for file processing, conver
 
 ## 🌟 Key Features
 
-- **Universal Input**: Every command supports both **local files** and **direct web links** (URLs).
 - **High-Performance Concurrency**: Built-in parallel processing for batch operations via `--parallel`.
-- **AI-Powered Capabilities**: Integrated AI tools for background removal and advanced OCR.
-- **Privacy & Security**: Secure file shredding, metadata sanitization, and AES-256-GCM encryption.
-- **Modular Plugin Architecture**: Easily extendable with a clean plugin system.
-- **Workflow Automation**: Run, watch, or schedule complex sequences of commands via YAML.
-- **Dry-Run Mode**: Every command supports `--dry-run` to validate operations without making changes.
+- **AI-Powered Capabilities**: Integrated local AI for **Image Upscaling (ESRGAN)**, **Speech-to-Text (Whisper)**, and background removal.
+- **Advanced Workflow Logic**: YAML-based automation with **conditional branching (if/then/else)** and dynamic variables.
+- **GPU Acceleration**: Optional hardware acceleration via global `--gpu` flag.
+- **Privacy & Security**: **Steganography**, **Secure Vaults**, file shredding, and metadata sanitization.
+- **Universal Input**: Every command supports both **local files** and **direct web links** (URLs).
 
 ## 🧩 Plugins & Capabilities
 
 ### 📁 File & Security
-- **`hash`**: Calculate MD5, SHA1, SHA256, or SHA512.
+- **`vault-encrypt` / `vault-decrypt`**: **New!** Create secure, password-protected vaults for files.
+- **`steg-hide` / `steg-extract`**: **New!** Hide sensitive data inside images using steganography.
 - **`shred`**: Securely overwrite files (DoD 5220.22-M) to prevent recovery.
+- **`hash`**: Calculate MD5, SHA1, SHA256, or SHA512.
 - **`encrypt` / `decrypt`**: AES-256-GCM file protection.
 - **`batch-rename`**: Advanced renaming with parallel support.
 - **`info`**: Detailed file statistics and metadata.
 
 ### 🖼️ Image Processing
-- **`remove-bg`**: **AI-powered** background removal using `rembg`.
+- **`upscale`**: **New!** AI-powered super-resolution (2x, 4x) using ESRGAN.
+- **`remove-bg`**: AI-powered background removal using `rembg`.
 - **`convert` / `resize` / `crop`**: Standard image manipulations.
 - **`ocr`**: Extract text with advanced preprocessing.
-- **`to-sticker`**: Create WhatsApp-ready stickers.
-- **`exif-strip`**: Remove privacy-sensitive metadata.
 
 ### 🎥 Video & Audio
+- **`stt`**: **New!** Speech-to-Text transcription using OpenAI Whisper (Offline).
 - **`watermark` / `remove-watermark`**: Add or remove logos/text from video.
-- **`to-sticker`**: Convert videos directly to WhatsApp stickers.
-- **`extract-frames`**: Pull high-quality frames from video.
 - **`normalize`**: Level audio volume using `loudnorm`.
 - **`trim` / `merge` / `compress`**: Core media editing tools.
 
@@ -101,6 +100,19 @@ toolbox image resize --glob "*.jpg" -w 800 --parallel --workers 8
 ```
 
 ### Automation (Workflows)
+```yaml
+# Example 0.3.0 Workflow with Logic
+name: Smart Media Processor
+steps:
+  - name: Check if image
+    if: "{file.suffix} == .jpg"
+    then:
+      - name: Upscale Image
+        command: "toolbox image upscale {input_file} -s 4"
+    else:
+      - name: Transcribe Audio
+        command: "toolbox audio stt {input_file}"
+```
 ```bash
 # Run a sequence of commands
 toolbox workflow run process_images.yaml
