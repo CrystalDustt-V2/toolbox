@@ -1,15 +1,31 @@
 import os
 from pathlib import Path
 from typing import List, Dict, Any
-import numpy as np
-from sentence_transformers import SentenceTransformer
-import faiss
+
+try:
+    import numpy as np
+except ModuleNotFoundError:
+    np = None
+
+try:
+    from sentence_transformers import SentenceTransformer
+except ModuleNotFoundError:
+    SentenceTransformer = None
+
+try:
+    import faiss
+except ModuleNotFoundError:
+    faiss = None
 from toolbox.core.engine import console
 
 class DocumentIndexer:
     """Simple RAG engine for local document intelligence."""
     
     def __init__(self, model_name: str = "all-MiniLM-L6-v2"):
+        if SentenceTransformer is None or faiss is None or np is None:
+            raise RuntimeError(
+                "Semantic indexing dependencies are missing. Install with: pip install 'toolbox-universal[ai]'"
+            )
         self.model = SentenceTransformer(model_name)
         self.index = None
         self.documents = []

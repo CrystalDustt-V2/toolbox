@@ -18,10 +18,30 @@ python -m pipx ensurepath
 pipx install toolbox-universal
 ```
 
+#### 3. Optional Feature Sets (Extras)
+
+ToolBox keeps heavy dependencies optional. Add only what you need:
+
+```bash
+# AI features (Whisper/LLM/ONNX/embeddings)
+pipx inject toolbox-universal "toolbox-universal[ai]"
+
+# Desktop features (dashboard/tray/hotkeys)
+pipx inject toolbox-universal "toolbox-universal[desktop]"
+
+# Security extras (PII audit / hardware keys)
+pipx inject toolbox-universal "toolbox-universal[security]"
+
+# Everything
+pipx inject toolbox-universal "toolbox-universal[all]"
+```
+
 ### Using `pip` (Advanced)
 If you prefer using standard `pip`:
 ```bash
 pip install toolbox-universal
+pip install "toolbox-universal[ai]"
+pip install "toolbox-universal[all]"
 ```
 > **Note**: On Windows, you might need to manually add the Python `Scripts` folder to your PATH for the `toolbox` command to work.
 
@@ -35,7 +55,9 @@ python -m toolbox [command]
 ```bash
 git clone https://github.com/CrystalDustt-V2/toolbox.git
 cd toolbox
-pip install -e .
+pip install -e .[dev]
+pip install -e .[dev,ai]
+pip install -e .[dev,all]
 ```
 
 ### Windows Binary

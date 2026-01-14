@@ -26,7 +26,11 @@ class AIPlugin(BasePlugin):
         @click.argument("files", nargs=-1, type=click.Path(exists=True))
         def index_command(files: List[str]):
             """Index local documents for RAG-enabled chat."""
-            from toolbox.core.ai_intelligence import DocumentIndexer
+            try:
+                from toolbox.core.ai_intelligence import DocumentIndexer
+            except Exception as e:
+                console.print(f"[bold red]Error:[/bold red] {e}")
+                return
             import pickle
             
             indexer = DocumentIndexer()
@@ -45,7 +49,12 @@ class AIPlugin(BasePlugin):
         @click.option("--max-tokens", default=512, help="Max tokens to generate")
         def chat_command(prompt: str, model: str, rag: bool, max_tokens: int):
             """Chat with a local LLM (offline, supports RAG)."""
-            from llama_cpp import Llama
+            try:
+                from llama_cpp import Llama
+            except ModuleNotFoundError:
+                console.print("[bold red]Error:[/bold red] Missing dependency: llama-cpp-python")
+                console.print("Install with: pip install 'toolbox-universal[ai]'")
+                return
             from toolbox.core.ai import AVAILABLE_MODELS, get_model_path, get_engine_routing
             import pickle
             
@@ -84,8 +93,13 @@ class AIPlugin(BasePlugin):
         @click.option("--model", default="llava-v1.5-7b-gguf", help="Vision model to use")
         def vision_command(image_path: str, prompt: str, model: str):
             """Analyze an image using a local Vision LLM (LLaVA)."""
-            from llama_cpp import Llama
-            from llama_cpp.llama_chat_format import Llava15ChatHandler
+            try:
+                from llama_cpp import Llama
+                from llama_cpp.llama_chat_format import Llava15ChatHandler
+            except ModuleNotFoundError:
+                console.print("[bold red]Error:[/bold red] Missing dependency: llama-cpp-python")
+                console.print("Install with: pip install 'toolbox-universal[ai]'")
+                return
             from toolbox.core.ai import AVAILABLE_MODELS, get_model_path, get_engine_routing
             import base64
 
@@ -137,7 +151,12 @@ class AIPlugin(BasePlugin):
         @click.option("--steps", default=20, help="Inference steps")
         def image_gen_command(prompt: str, output: str, steps: int):
             """Generate an image from text using local Stable Diffusion (ONNX)."""
-            from diffusers import OnnxStableDiffusionPipeline
+            try:
+                from diffusers import OnnxStableDiffusionPipeline
+            except ModuleNotFoundError:
+                console.print("[bold red]Error:[/bold red] Missing dependency: diffusers")
+                console.print("Install with: pip install 'toolbox-universal[ai]'")
+                return
             from toolbox.core.ai import AVAILABLE_MODELS, get_model_path, get_engine_routing
             
             model_key = "stable-diffusion-v1-5-onnx"
@@ -194,7 +213,12 @@ class AIPlugin(BasePlugin):
         @click.option("--model", default="phi-2-gguf", help="LLM model to use for the agent")
         def agent_command(goal: str, model: str):
             """Run an autonomous AI agent to achieve a goal using ToolBox commands."""
-            from llama_cpp import Llama
+            try:
+                from llama_cpp import Llama
+            except ModuleNotFoundError:
+                console.print("[bold red]Error:[/bold red] Missing dependency: llama-cpp-python")
+                console.print("Install with: pip install 'toolbox-universal[ai]'")
+                return
             from toolbox.core.ai import AVAILABLE_MODELS, get_model_path, get_engine_routing
             import json
             import re

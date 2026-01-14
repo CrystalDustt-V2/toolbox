@@ -29,8 +29,13 @@ class AudioPlugin(BasePlugin):
         @click.option("--gpu", is_flag=True, help="Use GPU for inference")
         def stt(input_file: str, model: str, output: Optional[str], gpu: bool):
             """Transcribe audio to text using OpenAI Whisper."""
-            import whisper
-            import torch
+            try:
+                import whisper
+                import torch
+            except ModuleNotFoundError:
+                console.print("[bold red]Error:[/bold red] Speech-to-text dependencies are missing.")
+                console.print("Install with: pip install 'toolbox-universal[ai]'")
+                return
             
             device = "cuda" if (gpu or torch.cuda.is_available()) else "cpu"
             console.print(f"[blue]Loading Whisper model '{model}' on {device}...[/blue]")

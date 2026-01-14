@@ -333,7 +333,11 @@ class FilePlugin(BasePlugin):
         @click.option("-d", "--directory", default=".", help="Directory to search in")
         def semantic_find(query: str, directory: str):
             """Semantic File Discovery: Search for files by meaning using local embeddings."""
-            from toolbox.core.ai_intelligence import DocumentIndexer
+            try:
+                from toolbox.core.ai_intelligence import DocumentIndexer
+            except Exception as e:
+                console.print(f"[bold red]Error:[/bold red] {e}")
+                return
             import pickle
             
             console.print(f"[bold blue]Searching semantically for:[/bold blue] \"{query}\"")

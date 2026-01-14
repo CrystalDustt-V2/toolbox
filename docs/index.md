@@ -18,6 +18,9 @@ ToolBox is a universal, offline-first CLI suite for file processing, automation,
 ```bash
 pipx install toolbox-universal
 
+# Optional: install the full feature set
+pipx inject toolbox-universal "toolbox-universal[all]"
+
 toolbox status
 toolbox check
 toolbox plugin list

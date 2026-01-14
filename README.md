@@ -64,9 +64,46 @@ Plugins (group → commands):
 
 ### Quick Install
 ```bash
-pip install toolbox-universal
-# or using pipx
 pipx install toolbox-universal
+```
+
+### Feature Sets (Extras)
+
+ToolBox keeps heavy dependencies optional. Install only what you need:
+
+```bash
+# Minimal (core commands)
+pipx install toolbox-universal
+
+# AI features (Whisper/LLM/ONNX/embeddings)
+pipx inject toolbox-universal "toolbox-universal[ai]"
+
+# Desktop features (dashboard/tray/hotkeys)
+pipx inject toolbox-universal "toolbox-universal[desktop]"
+
+# Security extras (PII audit / hardware keys)
+pipx inject toolbox-universal "toolbox-universal[security]"
+
+# Everything
+pipx inject toolbox-universal "toolbox-universal[all]"
+```
+
+If you prefer `pip` (installs into your current Python environment/venv):
+
+```bash
+pip install toolbox-universal
+pip install "toolbox-universal[ai]"
+pip install "toolbox-universal[all]"
+```
+
+### From Source (Development)
+
+`-e .` installs from this repo in editable mode into your current venv/Python.
+
+```bash
+pip install -e .[dev]
+pip install -e .[dev,ai]
+pip install -e .[dev,all]
 ```
 
 ### First Run
