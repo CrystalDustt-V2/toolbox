@@ -4,7 +4,7 @@ A universal, offline-first CLI utility suite for file processing, automation, AI
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python Version](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/downloads/)
-[![Version](https://img.shields.io/badge/version-1.0.0-magenta.svg)](#)
+[![Version](https://img.shields.io/badge/version-1.0.1-magenta.svg)](#)
 
 ---
 
