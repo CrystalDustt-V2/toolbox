@@ -157,7 +157,7 @@ toolbox config set global_bin_path "D:\\portable_tools\\bin"
 ```
 
 ## 📖 Wiki
-You can learn more about the commands here: [Wiki](wiki)
+You can learn more about the commands [here](/wiki)
 
 ## 📜 License
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
