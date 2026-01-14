@@ -47,31 +47,37 @@ class WorkflowRunner:
         pattern = r"\$\{([\w\.]+)\}|\$([\w\.]+)|\{([\w\.]+)\}"
         return re.sub(pattern, replace, text)
 
-    def _execute_step(self, step: Dict[str, Any], step_index: int, dry_run: bool = False) -> bool:
+    def _execute_step(self, step: Dict[str, Any], step_index: int, dry_run: bool = False, debug: bool = False) -> bool:
         """Execute a single workflow step. Returns True if successful."""
         step_name = step.get("name", f"Step {step_index + 1}")
         
+        if debug:
+            console.print(f"[bold magenta][DEBUG][/bold magenta] Processing step: {step_name}")
+            console.print(f"[bold magenta][DEBUG][/bold magenta] Step definition: {step}")
+
         # Check condition if present
         condition = step.get("if")
         if condition:
             condition = self._substitute_vars(condition)
+            if debug:
+                console.print(f"[bold magenta][DEBUG][/bold magenta] Evaluating condition: {condition}")
             # Evaluate basic expressions
             if "==" in condition:
                 left, right = [s.strip() for s in condition.split("==", 1)]
                 if left != right:
-                    return self._handle_skip(step, step_name)
+                    return self._handle_skip(step, step_name, debug=debug)
             elif "!=" in condition:
                 left, right = [s.strip() for s in condition.split("!=", 1)]
                 if left == right:
-                    return self._handle_skip(step, step_name)
+                    return self._handle_skip(step, step_name, debug=debug)
             elif condition.lower() in ["false", "0", "no", "none", ""]:
-                return self._handle_skip(step, step_name)
+                return self._handle_skip(step, step_name, debug=debug)
         
         # Handle branching
         if "then" in step:
             console.print(f"[bold blue]>>> Branch 'then' for {step_name}...[/bold blue]")
             for i, substep in enumerate(step["then"]):
-                if not self._execute_step(substep, i, dry_run):
+                if not self._execute_step(substep, i, dry_run, debug=debug):
                     return False
             return True
 
@@ -88,6 +94,9 @@ class WorkflowRunner:
             return False
 
         command_str = self._substitute_vars(command_str)
+        
+        if debug:
+            console.print(f"[bold magenta][DEBUG][/bold magenta] Command after variable substitution: {command_str}")
         
         if dry_run:
             console.print(f"[cyan][Dry Run] Would execute {step_name}:[/cyan] [dim]{command_str}[/dim]")
@@ -107,11 +116,13 @@ class WorkflowRunner:
             console.print(f"[green]✓ {step_name} completed successfully.[/green]")
             return True
         except Exception as e:
+            if debug:
+                console.print(f"[bold magenta][DEBUG][/bold magenta] Step failed with error: {e}")
             # Handle 'else' branch if execution fails
             if "else" in step:
                 console.print(f"[bold yellow]>>> Execution failed, running 'else' branch for {step_name}...[/bold yellow]")
                 for i, substep in enumerate(step["else"]):
-                    if not self._execute_step(substep, i, dry_run):
+                    if not self._execute_step(substep, i, dry_run, debug=debug):
                         return False
                 return True
 
@@ -121,19 +132,22 @@ class WorkflowRunner:
                 return True
             return False
 
-    def _handle_skip(self, step: Dict[str, Any], step_name: str) -> bool:
+    def _handle_skip(self, step: Dict[str, Any], step_name: str, debug: bool = False) -> bool:
         """Handle skipped step, running 'else' branch if present."""
         if "else" in step:
             console.print(f"[bold yellow]>>> Condition failed, running 'else' branch for {step_name}...[/bold yellow]")
             for i, substep in enumerate(step["else"]):
-                if not self._execute_step(substep, i):
+                if not self._execute_step(substep, i, debug=debug):
                     return False
             return True
         
-        console.print(f"[dim]Skipping {step_name} (condition is false)[/dim]")
+        if debug:
+            console.print(f"[bold magenta][DEBUG][/bold magenta] Skipping {step_name} (condition is false)")
+        else:
+            console.print(f"[dim]Skipping {step_name} (condition is false)[/dim]")
         return True
 
-    def run(self, workflow_path: str, overrides: Optional[Dict[str, str]] = None, dry_run: bool = False):
+    def run(self, workflow_path: str, overrides: Optional[Dict[str, str]] = None, dry_run: bool = False, debug: bool = False):
         """Run a workflow from a YAML file."""
         path = Path(workflow_path)
         if not path.exists():
@@ -158,6 +172,9 @@ class WorkflowRunner:
         if overrides:
             self.variables.update(overrides)
 
+        if debug:
+            console.print(f"[bold magenta][DEBUG][/bold magenta] Initial variables: {self.variables}")
+
         workflow_name = data.get("name", "Unnamed Workflow")
         steps = data.get("steps", [])
         parallel_mode = data.get("parallel", False)
@@ -174,7 +191,7 @@ class WorkflowRunner:
         if parallel_mode and not dry_run:
             with concurrent.futures.ThreadPoolExecutor() as executor:
                 # Map steps to future executions
-                futures = {executor.submit(self._execute_step, step, i, dry_run=dry_run): step for i, step in enumerate(steps)}
+                futures = {executor.submit(self._execute_step, step, i, dry_run=dry_run, debug=debug): step for i, step in enumerate(steps)}
                 for future in concurrent.futures.as_completed(futures):
                     step = futures[future]
                     try:
@@ -187,7 +204,7 @@ class WorkflowRunner:
                             raise WorkflowError(f"Parallel step failed: {e}")
         else:
             for i, step in enumerate(steps):
-                success = self._execute_step(step, i, dry_run=dry_run)
+                success = self._execute_step(step, i, dry_run=dry_run, debug=debug)
                 if not success:
                     raise WorkflowError(f"Workflow aborted at step '{step.get('name', i+1)}'")
 

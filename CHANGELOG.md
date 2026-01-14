@@ -2,6 +2,85 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.0] - 2026-01-14
+### Added
+- **ToolBox Singularity (Phase 10 - Stable Release)**:
+    - **Unified Intelligence Core**: Added `toolbox ai singularity` to orchestrate all Phase 1-9 systems with optional full autonomy.
+    - **Hardened Security Audit**: Added `toolbox security verify` to validate all cryptographic primitives and hardware-bound keys.
+    - **Omni-Interface Dashboard**: Enhanced `toolbox desktop dashboard` to v1.0.0 with unified fleet and security management.
+    - **Production Stability**: Finalized all core engines and dependency paths for stable release.
+
+## [0.9.0-dev] - 2026-01-14
+### Added
+- **Predictive Pre-Computation & Global Sync (Phase 9)**:
+    - **Predictive Pre-Computation**: Added `toolbox ambient shadow` for background "shadow-processing" based on AI heuristics.
+    - **Global Mesh Sync**: Added `toolbox network mesh-sync` using DHT-based discovery for global vault synchronization.
+    - **Semantic File Discovery**: Added `toolbox file semantic-find` for neural-search based on file content meaning.
+    - **Holographic CLI API**: Added `toolbox desktop ar-overlay` hooks for spatial computing and AR HUD integration.
+
+## [0.8.0-dev] - 2026-01-14
+### Added
+- **Autonomous Self-Evolution & Biological Logic (Phase 8)**:
+    - **Self-Optimizing JIT Heuristics**: Added `profile_engine` decorator to `BaseEngine` for performance telemetry and adaptive micro-optimization.
+    - **Mycelial Fleet Management**: Added `toolbox network mycelium` with `pulse`, `share`, and `heal` modes for biological-inspired resource distribution.
+    - **Genetic Workflow Optimizer**: Added `toolbox util evolve` to benchmark and evolve workflow execution profiles via simulated genetic mutation.
+    - **BCI Foundation**: Added `toolbox ai bci` for simulated Brain-Computer Interface intent detection and thought-to-command execution.
+
+## [0.7.0-dev] - 2026-01-14
+### Added
+- **Quantum-Ready Security & Hyper-Scale Parallelism (Phase 7)**:
+    - **Quantum-Resistant Hybrid Encryption**: Added `toolbox security quantum-encrypt` using hardware-bound AES-256-GCM.
+    - **Hyper-Scale Parallelism**: Added `toolbox network fleet-parallel` to distribute massive file batches across all active fleet nodes.
+    - **Immutable Audit Ledger**: Implemented hash-chained logging in `toolbox.ledger` for tamper-proof activity tracking.
+    - **Neural Compression**: Added `toolbox file compress-ai` using multi-stage hybrid delta encoding.
+
+## [0.6.0-dev] - 2026-01-14
+### Added
+- **Ambient Intelligence & Natural Interface (Phase 6)**:
+    - **Voice-to-Fleet**: Added `toolbox ambient voice` for offline voice command execution via Whisper and AI Agents.
+    - **Predictive Automation**: Added `toolbox ambient predict` to analyze usage patterns and suggest workflow optimizations.
+    - **Self-Healing Fleet**: Added `toolbox ambient fleet-health` with telemetry support in `fleet-worker` for node monitoring and re-routing.
+    - **Fleet Visualization**: Enhanced network telemetry with CPU/RAM metrics for distributed nodes.
+
+## [0.5.0-dev] - 2026-01-14
+### Added
+- **Distributed Edge & Collaborative Intelligence (Phase 5)**:
+    - **P2P Task Offloading**: Added `toolbox network fleet-worker` and `fleet-dispatch` to share compute across local nodes.
+    - **Mesh Storage Discovery**: Added `toolbox security vault-announce` and `vault-discover` for P2P vault sharing.
+    - **Local API Gateway**: Added `toolbox network fleet-api` (FastAPI) for remote control and fleet orchestration.
+    - **Fleet Telemetry**: Added `toolbox network fleet-status` for real-time node discovery using UDP broadcasting.
+- **Autonomous Agents & Workflow Orchestration (Phase 4)**:
+    - **AI Agent Core**: Added `toolbox ai agent` for autonomous command execution based on high-level goals.
+    - **Dynamic Workflow Engine**: Added `toolbox util workflow` with support for variables, `if/else` logic, and task registration.
+    - **Event-Driven Triggers**: Added `toolbox file watch` using `watchdog` to trigger ToolBox commands automatically on file changes.
+- **Fortified Security & Privacy (Phase 3)**:
+    - **Privacy Audit Engine**: Added `toolbox security audit` to detect PII (emails, phones, credit cards) in local files using `presidio-analyzer`.
+    - **Encrypted Virtual Drives**: Added `toolbox security mount` to securely mount vaults as temporary virtual drives (with `subst` support on Windows).
+    - **Hardware-Backed Security**: Added `toolbox security hardware-setup` foundation for FIDO2/YubiKey authentication.
+- **Intelligent Edge Computing (Phase 2)**:
+    - **Local LLM Integration**: Added `toolbox ai chat` with **RAG (Retrieval-Augmented Generation)** support using `FAISS` and `sentence-transformers`.
+    - **Vision LLM support**: Added `toolbox ai vision` using **LLaVA v1.5** for local image description and analysis.
+    - **Document Indexing**: Added `toolbox ai index` to create local vector databases from TXT, MD, and PDF files.
+    - **Local Image Generation**: Added `toolbox ai image-gen` using **Stable Diffusion ONNX** for offline text-to-image creation.
+    - **Intelligent Engine Routing**: Implemented hardware telemetry (CPU/GPU/RAM) to automatically route AI tasks to the most efficient provider.
+- **Desktop Experience (Phase 1)**:
+    - **System Tray Integration**: Added `toolbox desktop daemon --tray` for quick access and background persistence.
+    - **Global Hotkeys**: Added `toolbox desktop daemon --hotkeys` with initial shortcuts for Vault (`Alt+Ctrl+V`) and OCR (`Alt+Ctrl+O`).
+    - **Web Dashboard**: Added `toolbox desktop dashboard` to launch a local Tailwind-powered management UI (FastAPI).
+    - **File Associations**: Added `toolbox desktop register-file-type` to link extensions (like `.vault`) directly to ToolBox workflows.
+- **Video Super-Resolution**: Added `toolbox video upscale` using AI (ESRGAN) to upscale videos frame-by-frame with audio preservation.
+- **Encrypted Steganography**: Enhanced `toolbox security steg-hide` and `steg-extract` with optional password-based encryption (PBKDF2/Fernet).
+- **Desktop Integration (Initial)**:
+    - **Windows Context Menu**: Added `toolbox desktop install-context-menu` to add "Run with ToolBox" to right-click menus for files and folders.
+    - **Native Notifications**: Added `toolbox desktop notify` for cross-platform system notifications (Windows/macOS/Linux).
+- **Encrypted P2P Transfer**: Added `toolbox network p2p-send` and `p2p-receive` for secure, peer-to-peer file transfers using PBKDF2/Fernet encryption.
+
+## [0.3.1-dev] - 2026-01-14
+### Added
+- **Automated Model Management**: Added `toolbox ai download` command to pre-cache AI models (upscale, etc.) for offline use.
+- **Enhanced Logging**: Added `--json-log` flag to the main CLI for machine-readable output in JSON format.
+- **Workflow Debugger**: Added `--debug-workflow` flag to `toolbox workflow run` for detailed execution tracing and variable inspection.
+
 ## [0.3.0] - 2026-01-13
 ### Added
 - **AI Core Architecture**: Integrated `toolbox.core.ai` for managing local AI models (ONNX, Whisper) and GPU acceleration detection.

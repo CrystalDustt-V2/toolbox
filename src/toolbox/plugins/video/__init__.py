@@ -23,6 +23,128 @@ class VideoPlugin(BasePlugin):
             """Video processing tools (requires FFmpeg)."""
             pass
 
+        @video_group.command(name="upscale")
+        @click.argument("input_file")
+        @click.option("-s", "--scale", type=int, default=2, help="Upscale factor (2 or 4)")
+        @click.option("-o", "--output", type=click.Path(), help="Output upscaled video filename")
+        @click.option("--fps", type=int, help="Override FPS (defaults to original)")
+        def upscale(input_file: str, scale: int, output: Optional[str], fps: Optional[int]):
+            """Upscale video using AI (ESRGAN). WARNING: Very slow and resource-intensive."""
+            import cv2
+            import numpy as np
+            import onnxruntime as ort
+            from toolbox.core.ai import get_model_path, is_gpu_available, AVAILABLE_MODELS
+            import tempfile
+            import shutil
+
+            ffmpeg = engine_registry.get("ffmpeg")
+            if not ffmpeg.is_available:
+                console.print("[bold red]Error:[/bold red] FFmpeg engine not found.")
+                return
+
+            model_key = f"upscale-x{scale}"
+            if model_key not in AVAILABLE_MODELS:
+                console.print(f"[bold red]Error:[/bold red] Scale {scale} not supported. Use 2 or 4.")
+                return
+
+            model_info = AVAILABLE_MODELS[model_key]
+            try:
+                model_path = get_model_path(model_info["name"], model_info["url"])
+            except Exception as e:
+                console.print(f"[bold red]Error:[/bold red] Could not download model: {e}")
+                return
+
+            with get_input_path(input_file) as path:
+                # 1. Prepare session
+                providers = ["CPUExecutionProvider"]
+                if is_gpu_available():
+                    providers.insert(0, "CUDAExecutionProvider")
+                
+                try:
+                    session = ort.InferenceSession(str(model_path), providers=providers)
+                except Exception as e:
+                    console.print(f"[bold red]Error:[/bold red] Failed to load AI model: {e}")
+                    return
+
+                # 2. Get video info
+                cap = cv2.VideoCapture(str(path))
+                if not cap.isOpened():
+                    console.print(f"[bold red]Error:[/bold red] Could not open video {input_file}")
+                    return
+                
+                orig_fps = fps or cap.get(cv2.CAP_PROP_FPS)
+                total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+                width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+                height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+                cap.release()
+
+                console.print(f"[blue]Upscaling video: {width}x{height} @ {orig_fps} FPS[/blue]")
+                console.print(f"[dim]Scale: {scale}x | Target: {width*scale}x{height*scale}[/dim]")
+
+                # 3. Create temp directory for frames
+                temp_dir = Path(tempfile.mkdtemp(prefix="toolbox_upscale_"))
+                frames_dir = temp_dir / "frames"
+                upscaled_dir = temp_dir / "upscaled"
+                frames_dir.mkdir()
+                upscaled_dir.mkdir()
+
+                try:
+                    # Step 1: Extract frames
+                    console.print("[yellow]Step 1/3: Extracting frames...[/yellow]")
+                    ffmpeg.run(["-i", str(path), str(frames_dir / "frame_%05d.png")])
+
+                    # Step 2: Upscale frames
+                    frame_files = sorted(list(frames_dir.glob("*.png")))
+                    console.print(f"[yellow]Step 2/3: Upscaling {len(frame_files)} frames...[/yellow]")
+                    
+                    with console.status("[bold blue]Processing frames...") as status:
+                        for i, frame_file in enumerate(frame_files):
+                            status.update(f"[bold blue]Processing frame {i+1}/{len(frame_files)}...")
+                            
+                            # Load and preprocess
+                            img = cv2.imread(str(frame_file))
+                            if img is None: continue
+                            
+                            img_input = img.astype(np.float32) / 255.0
+                            img_input = np.transpose(img_input[:, :, [2, 1, 0]], (2, 0, 1))
+                            img_input = np.expand_dims(img_input, axis=0)
+                            
+                            # Inference
+                            ort_inputs = {session.get_inputs()[0].name: img_input}
+                            output_tensor = session.run(None, ort_inputs)[0]
+                            
+                            # Postprocess
+                            output_img = np.squeeze(output_tensor)
+                            output_img = np.clip(output_img, 0, 1)
+                            output_img = np.transpose(output_img, (1, 2, 0))
+                            output_img = (output_img[:, :, [2, 1, 0]] * 255).astype(np.uint8)
+                            
+                            # Save upscaled frame
+                            cv2.imwrite(str(upscaled_dir / frame_file.name), output_img)
+
+                    # Step 3: Re-encode video
+                    console.print("[yellow]Step 3/3: Re-encoding video and merging audio...[/yellow]")
+                    out_path = output or f"upscaled_{Path(path).name}"
+                    
+                    # Merge frames back to video and copy audio from original
+                    args = [
+                        "-framerate", str(orig_fps),
+                        "-i", str(upscaled_dir / "frame_%05d.png"),
+                        "-i", str(path), # Second input for audio
+                        "-map", "0:v",   # Take video from first input (upscaled frames)
+                        "-map", "1:a?",  # Take audio from second input (optional)
+                        "-c:v", "libx264",
+                        "-pix_fmt", "yuv420p",
+                        "-crf", "18",
+                        out_path
+                    ]
+                    ffmpeg.run_with_progress(args, label="Finalizing video")
+                    
+                    console.print(f"[green]✓ Video successfully upscaled to {out_path}[/green]")
+
+                finally:
+                    shutil.rmtree(temp_dir)
+
         @video_group.command(name="trim")
         @click.argument("input_file")
         @click.option("--start", help="Start time (HH:MM:SS)")

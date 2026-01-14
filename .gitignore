@@ -62,6 +62,7 @@ coverage.xml
 .pytest_cache/v/
 .pytest_cache/.gitignore
 .pytest_cache/CACHEDIR.TAG
+.pytest_tmp/
 
 # Translations
 *.mo

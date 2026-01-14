@@ -1,22 +1,40 @@
 # ToolBox CLI
 
-ToolBox is a universal, offline CLI utility suite designed to simplify common file processing tasks. From image manipulation and video conversion to PDF processing and workflow automation, ToolBox brings powerful engines under a single, easy-to-use interface.
+ToolBox is a universal, offline-first CLI suite for file processing, automation, AI-assisted workflows, and security operations.
 
-## Key Features
+## What ToolBox Covers
 
-- **Universal Interface**: One tool for images, videos, audio, and documents.
-- **Offline First**: All processing happens locally. No data ever leaves your machine.
-- **Workflow Automation**: Chain multiple commands into powerful YAML-based workflows.
-- **Parallel Execution**: Run independent tasks simultaneously for maximum performance.
-- **Extensible Architecture**: Easily add new plugins or integrate community tools.
-- **Fuzzy Matching**: Never worry about mistyping a command again.
+- File operations (hashing, encryption, shredding, watchers)
+- Images (convert/resize/crop/EXIF/OCR/remove-bg/upscale)
+- Video/audio (FFmpeg-powered conversions and editing)
+- PDFs and documents (merge/split/rotate/sanitize/convert)
+- Data conversion (JSON/CSV/YAML, SQLite export)
+- Security (vaults, steganography, PII audit, verification)
+- Networking (download/serve/scan, fleet primitives)
+- Automation (workflows: run/watch/schedule)
 
 ## Quick Start
 
 ```bash
-# Install ToolBox using pipx (recommended)
 pipx install toolbox-universal
 
-# Or run instantly without installation
-python -m toolbox status
+toolbox status
+toolbox check
+toolbox plugin list
+```
+
+## How To Navigate Commands
+
+ToolBox uses a consistent shape:
+
+```bash
+toolbox <group> <command> [args/options]
+```
+
+Examples:
+
+```bash
+toolbox image resize --glob "*.jpg" -w 1280
+toolbox pdf merge a.pdf b.pdf -o merged.pdf
+toolbox workflow run examples/universal_demo.yaml
 ```

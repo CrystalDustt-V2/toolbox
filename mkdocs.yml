@@ -13,16 +13,7 @@ theme:
 nav:
   - Home: index.md
   - Getting Started: getting-started.md
-  - Plugins:
-      - Overview: plugins/overview.md
-      - Image: plugins/image.md
-      - Video: plugins/video.md
-      - Audio: plugins/audio.md
-      - PDF: plugins/pdf.md
-      - File: plugins/file.md
-  - Workflows: workflows.md
-  - Development: development.md
-  - Contributing: contributing.md
+  - Command Reference: index.md
 
 repo_url: https://github.com/CrystalDustt-V2/toolbox
 repo_name: CrystalDustt-V2/toolbox

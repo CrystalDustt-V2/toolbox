@@ -37,10 +37,11 @@ class FuzzyGroup(click.Group):
 @click.option("--verbose", is_flag=True, help="Enable verbose output for engines")
 @click.option("--gpu", is_flag=True, help="Enable GPU acceleration for AI tasks")
 @click.option("--log-file", type=click.Path(), help="Path to log file")
-def cli(verbose, gpu, log_file):
+@click.option("--json-log", is_flag=True, help="Output logs in JSON format for machine reading")
+def cli(verbose, gpu, log_file, json_log):
     """ToolBox: A universal offline CLI utility suite."""
     log_level = logging.DEBUG if verbose else logging.INFO
-    setup_logging(level=log_level, log_file=Path(log_file) if log_file else None)
+    setup_logging(level=log_level, log_file=Path(log_file) if log_file else None, json_format=json_log)
     
     if verbose:
         logger.debug("Verbose mode enabled")
@@ -307,7 +308,8 @@ def workflow_group():
 @click.argument("workflow_file", type=click.Path(exists=True))
 @click.option("-v", "--var", multiple=True, help="Override workflow variables (key=value)")
 @click.option("--dry-run", is_flag=True, help="Validate workflow without executing commands")
-def run_workflow(workflow_file, var, dry_run):
+@click.option("--debug-workflow", is_flag=True, help="Show detailed execution trace for workflows")
+def run_workflow(workflow_file, var, dry_run, debug_workflow):
     """Run a sequence of commands from a workflow YAML file."""
     overrides = {}
     for v in var:
@@ -317,7 +319,7 @@ def run_workflow(workflow_file, var, dry_run):
 
     runner = WorkflowRunner(cli)
     try:
-        runner.run(workflow_file, overrides=overrides, dry_run=dry_run)
+        runner.run(workflow_file, overrides=overrides, dry_run=dry_run, debug=debug_workflow)
     except Exception as e:
         console.print(f"[bold red]Workflow failed:[/bold red] {str(e)}")
         raise click.Abort()

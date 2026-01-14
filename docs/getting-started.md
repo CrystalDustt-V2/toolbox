@@ -76,6 +76,14 @@ toolbox config set global_bin_path "D:\portable_tools\bin"
 
 ## First Steps
 
+## Sanity Checks
+
+```bash
+toolbox status
+toolbox check
+toolbox plugin list
+```
+
 ### Batch Processing
 
 ToolBox makes it easy to process multiple files:
@@ -90,4 +98,22 @@ Use the interactive builder to create automation:
 
 ```bash
 toolbox workflow init my_automation.yaml
+```
+
+### Running Workflows
+
+```bash
+toolbox workflow run my_automation.yaml
+toolbox workflow run my_automation.yaml -v input_file=photo.jpg
+toolbox workflow watch ./incoming my_automation.yaml --ext .pdf --ext .png
+toolbox workflow schedule my_automation.yaml --interval 60 --immediate
+```
+
+### Common Tasks
+
+```bash
+toolbox pdf sanitize report.pdf -o report_sanitized.pdf
+toolbox file encrypt secret.zip --password "your-password"
+toolbox image ocr screenshot.png
+toolbox video compress input.mp4 -o out.mp4
 ```

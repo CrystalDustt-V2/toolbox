@@ -3,13 +3,54 @@ import subprocess
 import sys
 import os
 import re
+import time
+import functools
+import json
 from pathlib import Path
-from typing import List, Optional, Tuple, Dict
+from typing import List, Optional, Tuple, Dict, Any
 from rich.console import Console
 from rich.progress import Progress, TextColumn, BarColumn, TaskProgressColumn, TimeRemainingColumn
 from toolbox.core.config import config_manager
 
 console = Console()
+
+# Self-Optimizing JIT Metrics
+PERFORMANCE_LOG = Path("bin/performance_metrics.json")
+
+def profile_engine(func):
+    """Decorator to profile engine performance and store heuristics."""
+    @functools.wraps(func)
+    def wrapper(self, *args, **kwargs):
+        start_time = time.perf_counter()
+        result = func(self, *args, **kwargs)
+        end_time = time.perf_counter()
+        duration = end_time - start_time
+        
+        # Store metric
+        metrics = {}
+        if PERFORMANCE_LOG.exists():
+            try:
+                metrics = json.loads(PERFORMANCE_LOG.read_text())
+            except Exception: pass
+        
+        engine_name = self.name.lower()
+        if engine_name not in metrics:
+            metrics[engine_name] = []
+        
+        metrics[engine_name].append({
+            "timestamp": time.time(),
+            "duration": duration,
+            "args_count": len(args[0]) if args else 0
+        })
+        
+        # Keep only last 50 metrics per engine
+        metrics[engine_name] = metrics[engine_name][-50:]
+        
+        PERFORMANCE_LOG.parent.mkdir(parents=True, exist_ok=True)
+        PERFORMANCE_LOG.write_text(json.dumps(metrics))
+        
+        return result
+    return wrapper
 
 def get_bundled_bin_path() -> Optional[Path]:
     """Get the path to bundled binaries if they exist."""
@@ -84,6 +125,7 @@ class BaseEngine:
                 return binary_path
         return None
 
+    @profile_engine
     def run(self, args: List[str], check: bool = True) -> subprocess.CompletedProcess:
         if not self.is_available:
             hint = self.get_install_hint()

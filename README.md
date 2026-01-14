@@ -1,191 +1,126 @@
 # 🛠️ ToolBox CLI
 
-A powerful, universal, and offline CLI utility suite for file processing, conversion, and management. Designed for engineers, researchers, and power users who need a robust toolset that works anywhere.
+A universal, offline-first CLI utility suite for file processing, automation, AI-assisted workflows, and security operations. ToolBox wraps common engines (FFmpeg, Tesseract, LibreOffice, Poppler) behind one consistent command surface.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python Version](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/downloads/)
+[![Version](https://img.shields.io/badge/version-1.0.0-magenta.svg)](#)
 
-## 🌟 Key Features
+---
 
-- **High-Performance Concurrency**: Built-in parallel processing for batch operations via `--parallel`.
-- **AI-Powered Capabilities**: Integrated local AI for **Image Upscaling (ESRGAN)**, **Speech-to-Text (Whisper)**, and background removal.
-- **Advanced Workflow Logic**: YAML-based automation with **conditional branching (if/then/else)** and dynamic variables.
-- **GPU Acceleration**: Optional hardware acceleration via global `--gpu` flag.
-- **Privacy & Security**: **Steganography**, **Secure Vaults**, file shredding, and metadata sanitization.
-- **Universal Input**: Every command supports both **local files** and **direct web links** (URLs).
+## 🌟 What You Get
 
-## 🧩 Plugins & Capabilities
+- **Offline-first processing**: files stay local; no required cloud services.
+- **Unified CLI surface**: `toolbox <group> <command>` across domains.
+- **Batch + automation**: glob processing, watchers, and YAML workflows.
+- **Security utilities**: encryption, vaults, shredding, PII audit.
+- **Optional AI assist**: local LLM chat/vision, Whisper STT, document indexing.
 
-### 📁 File & Security
-- **`vault-encrypt` / `vault-decrypt`**: **New!** Create secure, password-protected vaults for files.
-- **`steg-hide` / `steg-extract`**: **New!** Hide sensitive data inside images using steganography.
-- **`shred`**: Securely overwrite files (DoD 5220.22-M) to prevent recovery.
-- **`hash`**: Calculate MD5, SHA1, SHA256, or SHA512.
-- **`encrypt` / `decrypt`**: AES-256-GCM file protection.
-- **`batch-rename`**: Advanced renaming with parallel support.
-- **`info`**: Detailed file statistics and metadata.
+---
 
-### 🖼️ Image Processing
-- **`upscale`**: **New!** AI-powered super-resolution (2x, 4x) using ESRGAN.
-- **`remove-bg`**: AI-powered background removal using `rembg`.
-- **`convert` / `resize` / `crop`**: Standard image manipulations.
-- **`ocr`**: Extract text with advanced preprocessing.
+## 🚀 Key Features
 
-### 🎥 Video & Audio
-- **`stt`**: **New!** Speech-to-Text transcription using OpenAI Whisper (Offline).
-- **`watermark` / `remove-watermark`**: Add or remove logos/text from video.
-- **`normalize`**: Level audio volume using `loudnorm`.
-- **`trim` / `merge` / `compress`**: Core media editing tools.
+- **High-performance batch execution**: parallel-friendly primitives across plugins.
+- **Workflow automation**: `toolbox workflow run/watch/schedule` plus YAML variables and branching.
+- **Universal input**: many commands accept local paths or URLs.
+- **Engine integration**: FFmpeg / Tesseract / Poppler / LibreOffice.
+- **Extensible plugin architecture**: discover, list, scaffold plugins.
 
-### 📄 Document & PDF
-- **`sanitize`**: Remove metadata and hidden information from PDFs.
-- **`convert`**: Universal document conversion via LibreOffice.
-- **`merge` / `split` / `rotate`**: Robust PDF management.
-- **`extract-text`**: OCR-based text extraction from PDFs.
+---
 
-### 📊 Data & Utilities
-- **`sql-export`**: Export JSON/CSV/YAML datasets to SQLite.
-- **`convert`**: Seamlessly switch between JSON, CSV, and YAML.
-- **`qr`**: Generate QR codes from any text or link.
-- **`network info/scan`**: Connection diagnostics and port scanning.
+## 🧩 Command Surface
 
-## 🚀 Getting Started
+Global commands:
+
+- `toolbox status` / `toolbox check`
+- `toolbox config list/set`
+- `toolbox plugin list/search/install/create`
+- `toolbox workflow run/init/watch/schedule`
+
+Plugins (group → commands):
+
+- **ai** → download, chat, image-gen, vision, index, agent, bci, singularity
+- **ambient** → voice, predict, fleet-health, shadow
+- **archive** → compress, extract
+- **audio** → convert, trim, merge, normalize, stt
+- **data** → convert, inspect, sql-export
+- **desktop** → install-context-menu, uninstall-context-menu, notify, daemon, dashboard, register-file-type, ar-overlay
+- **doc** → convert, inspect
+- **file** → hash, rename, batch-rename, info, encrypt, decrypt, shred, watch, compress-ai, semantic-find
+- **image** → convert, resize, crop, metadata, ocr, to-sticker, exif-strip, remove-bg, upscale
+- **network** → scan, ping, fleet-worker, fleet-status, fleet-dispatch, fleet-api, fleet-parallel, mycelium, mesh-sync
+- **pdf** → merge, split, rotate, metadata, extract-text, ocr, sanitize
+- **security** → vault-encrypt, vault-decrypt, steg-hide, steg-extract, audit, hardware-setup, mount, vault-announce, vault-discover, quantum-encrypt, quantum-decrypt, verify
+- **util** → qr, base64, url, password, case, count, regex, sort, replace, workflow, evolve
+
+---
+
+## 🚀 Installation & Setup
 
 ### Prerequisites
 
-ToolBox relies on specialized engines:
-- **FFmpeg**: Video/Audio processing.
-- **Tesseract**: OCR capabilities.
-- **LibreOffice**: Document conversion.
-- **Poppler**: PDF processing.
+- Python 3.10+
+- External engines (recommended for full features): FFmpeg, Tesseract, Poppler, LibreOffice
 
-### Installation
-
-#### 🚀 Recommended: Using pipx (Automatic PATH setup)
-`pipx` is the best way to install ToolBox. It installs the tool in an isolated environment and **automatically handles your system PATH** so the `toolbox` command works immediately.
-
-```bash
-# If you don't have pipx yet:
-python -m pip install --user pipx
-python -m pipx ensurepath
-
-# Install ToolBox:
-pipx install toolbox-universal
-```
-*Note: You may need to restart your terminal after installing `pipx` for the first time.*
-
-#### Alternative: Using pip
+### Quick Install
 ```bash
 pip install toolbox-universal
+# or using pipx
+pipx install toolbox-universal
 ```
 
-#### Portable: Run via Python
-If you don't want to install it:
+### First Run
 ```bash
-python -m toolbox --help
+# Verify system readiness and engines
+toolbox check
+
+# List the installed plugins and their commands
+toolbox plugin list
 ```
 
-2. **Setup Engines (Windows)**:
-   ```bash
-   toolbox check  # Check current status
-   python setup_engines.py  # Auto-download portable engines
-   ```
+---
 
-## 📖 Advanced Usage
+## 📖 Usage Examples
 
-### Parallel Batch Processing
+### Workflow automation
 ```bash
-# Resize all JPEGs in a folder using 8 worker threads
-toolbox image resize --glob "*.jpg" -w 800 --parallel --workers 8
-```
-
-### Automation (Workflows)
-```yaml
-# Example 0.3.0 Workflow with Logic
-name: Smart Media Processor
-steps:
-  - name: Check if image
-    if: "{file.suffix} == .jpg"
-    then:
-      - name: Upscale Image
-        command: "toolbox image upscale {input_file} -s 4"
-    else:
-      - name: Transcribe Audio
-        command: "toolbox audio stt {input_file}"
-```
-```bash
-# Run a sequence of commands
-toolbox workflow run process_images.yaml
-
-# Watch a directory for new files and auto-trigger a workflow
-toolbox workflow watch ./incoming my_workflow.yaml --ext .pdf
-
-# Schedule a workflow to run every 60 minutes
-toolbox workflow schedule maintenance.yaml --interval 60 --immediate
-```
-
-### Logging
-```bash
-# Run a command and save detailed logs to a file
-toolbox file hash large_file.iso --log-file ./logs/audit.log
-```
-
-### Workflow Automation
-```bash
-# Run a complex automation sequence
 toolbox workflow run examples/universal_demo.yaml
+toolbox workflow watch ./incoming examples/sample_workflow.yaml --ext .pdf --ext .png
+toolbox workflow schedule examples/sample_workflow.yaml --interval 60 --immediate
 ```
 
-### Advanced Media
+### Common file operations
 ```bash
-# Extract frames every 0.5 seconds
-toolbox video extract-frames my_video.mp4 --interval 0.5
-
-# Normalize audio volume
-toolbox audio normalize recording.mp3 -o balanced.mp3
+toolbox file hash ./big.iso --algorithm sha256
+toolbox file shred ./sensitive.txt
+toolbox archive compress ./folder -f zip
 ```
 
-### **Workflow Automation**
-Automate complex tasks using YAML workflows:
+### Media processing
 ```bash
-# Interactively create a new workflow
-toolbox workflow init my_tasks.yaml
-
-# Run the workflow
-toolbox workflow run my_tasks.yaml
-
-# Run with variable overrides and dry-run
-toolbox workflow run my_tasks.yaml -v input_file=photo.jpg --dry-run
+toolbox image resize --glob "*.jpg" -w 1280
+toolbox pdf merge a.pdf b.pdf -o merged.pdf
+toolbox video compress input.mp4 -o out.mp4
 ```
 
-### **Batch Processing**
-Many commands now support processing multiple files at once using glob patterns:
+### Security operations
 ```bash
-# Resize all JPEGs in a folder
-toolbox image resize --glob "*.jpg" -w 800
-
-# Convert all videos in a folder to GIF
-toolbox video to-gif --glob "videos/*.mp4"
+toolbox security verify
+toolbox security audit ./docs
+toolbox security vault-encrypt secret.zip --password "your-password"
 ```
 
-### **Global Engine Path**
-You can now set a global directory where ToolBox will look for engine binaries (ffmpeg, tesseract, etc.):
-```bash
-toolbox config set global_bin_path "C:\MyTools\bin"
-```
+---
 
 ## 🛠️ Configuration
-
-Settings are stored in `config.yaml`. Manage them via CLI:
+Manage your global settings via the CLI:
 ```bash
 toolbox config list
-toolbox config set engine_paths.ffmpeg "C:\ffmpeg\bin\ffmpeg.exe"
+toolbox config set global_bin_path "D:\\portable_tools\\bin"
 ```
 
-## 🤝 Contributing
-
-Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
-
 ## 📜 License
-
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+---
+ToolBox is designed to be safe-by-default and predictable: it is best used as a local operator for trusted inputs.
